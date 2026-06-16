@@ -1,0 +1,18 @@
+# Quarto output
+_output/
+_site/
+.quarto/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
+
+# Python / venv (in case examples grow)
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+venv/
+.venv/

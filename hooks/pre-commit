@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+#
+# pre-commit: re-render each template's example into previews/<name>.html
+#
+# A template is rendered only when files under _extensions/<name>/ or
+# examples/<name>/ appear in the staged diff. Updated previews are added
+# to the commit automatically.
+#
+# Activate per clone:   git config core.hooksPath hooks
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+red()   { printf '\033[31m%s\033[0m' "$1"; }
+green() { printf '\033[32m%s\033[0m' "$1"; }
+amber() { printf '\033[33m%s\033[0m' "$1"; }
+dim()   { printf '\033[2m%s\033[0m' "$1"; }
+
+log() { printf "%s %s\n" "$(dim 'pre-commit:')" "$*" >&2; }
+
+if ! command -v quarto >/dev/null 2>&1; then
+  log "$(red 'error:') quarto is not installed — install from https://quarto.org and retry"
+  exit 1
+fi
+
+shopt -s nullglob
+templates=(_extensions/*/)
+if (( ${#templates[@]} == 0 )); then
+  log "$(amber 'note:') no templates found under _extensions/, nothing to render"
+  exit 0
+fi
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+mkdir -p previews
+rendered=()
+
+for ext_dir in "${templates[@]}"; do
+  name="$(basename "$ext_dir")"
+  example_dir="examples/$name"
+
+  if [[ ! -f "$example_dir/template.qmd" ]]; then
+    log "$(amber 'skip') $name (no example at $example_dir/template.qmd)"
+    continue
+  fi
+
+  if ! printf '%s\n' "$staged" | grep -qE "^_extensions/$name/|^examples/$name/"; then
+    log "$(dim 'unchanged') $name"
+    continue
+  fi
+
+  log "rendering $name ..."
+  if ! (cd "$example_dir" && quarto render template.qmd -M embed-resources:true >/dev/null 2>&1); then
+    log "$(red 'fail') $name render failed — run 'quarto render examples/$name/template.qmd' to debug"
+    exit 1
+  fi
+
+  src_html="$example_dir/_output/template.html"
+  dest_html="previews/$name.html"
+
+  if [[ ! -f "$src_html" ]]; then
+    log "$(red 'fail') no output produced for $name"
+    exit 1
+  fi
+
+  cp "$src_html" "$dest_html"
+  git add "$dest_html"
+  rendered+=("$dest_html")
+  log "$(green 'ok') $name -> $dest_html"
+done
+
+if (( ${#rendered[@]} > 0 )); then
+  log "regenerated $(green "${#rendered[@]}") preview(s)"
+fi

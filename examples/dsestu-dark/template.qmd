@@ -1,0 +1,236 @@
+---
+title: "Field notes from a cool instrument"
+subtitle: "A dark-mode Quarto template tuned for long-form analytical writing, with one bold typographic moment at the title and quiet discipline everywhere else."
+author:
+  - David Sestu
+date: "2026.06.16"
+description: |
+  Every component shipped with the template, rendered in a single page so the
+  type, palette, and rhythm can be audited end to end.
+categories: [template, design, dark-mode]
+---
+
+::: {.lead}
+A notebook should make its argument easy to follow. This template keeps the visual language quiet — a cool deep-blue base, warm cream text, a single sodium-amber accent — so the analysis stays in the foreground.
+:::
+
+Type and code are both set in **Geist**, with **Geist Mono** for monospace. Hierarchy is built from weight contrast within one family rather than face contrast across two. The palette runs from `#0e1116` at the page edge up through `#1a1f27` for code surfaces, with `#f0b232` reserved for emphasis and active states.
+
+## Headings & hierarchy
+
+H1 reads as a title through weight and size, not through a contrasting family. H2 carries a small amber tick above it instead of a rule beneath — a section break without the newspaper move. H3 and below stay smaller and tighter.
+
+### A third-level heading
+
+Reads as a divider, not a banner.
+
+#### A fourth-level heading
+
+For micro-structure inside a sub-section. Switches to Geist so it doesn't compete with the Fraunces hierarchy.
+
+##### TINY MONO LABEL
+
+For tagging blocks of metadata or run identifiers.
+
+## Prose, emphasis, and inline elements
+
+Body text is Geist with a 1.6 line-height. Emphasis uses *Geist italic* — quiet, not theatrical. Inline `code` is set in Geist Mono with subtle surface fill. You can ==highlight a phrase== with `mark`, render <kbd>⌘</kbd> + <kbd>K</kbd> as keyboard shortcuts, and use abbreviations like <abbr title="Monthly Recurring Revenue">MRR</abbr> with a dotted underline.
+
+Links underline in amber with a low-opacity stroke that solidifies on hover; [external links](https://quarto.org) do not get an arrow — the underline color already tells you everything.
+
+> "The reason we're building this is not aesthetics — it's that good design is the externalization of careful thinking. If the document looks careful, the reader gives the argument more room."
+>
+> — *Anonymous, after too much coffee*
+
+## Callouts
+
+Five flavors, each desaturated to sit quietly against the dark base.
+
+::: {.callout-note}
+## A note
+
+Use notes for context that helps a reader without being load-bearing.
+:::
+
+::: {.callout-tip}
+## A tip
+
+Tips highlight a recommended path. Reach for them sparingly.
+:::
+
+::: {.callout-warning}
+## A warning
+
+Warnings flag things that could break — silent failures, performance cliffs, edge cases. The amber here is the same one as the brand accent, so warnings double as gentle emphasis.
+:::
+
+::: {.callout-important}
+## Important
+
+Important callouts are for non-negotiable constraints: data semantics, security boundaries, compliance.
+:::
+
+::: {.callout-caution}
+## A caution
+
+Cautions are for actions the reader can take that are not easily reversible.
+:::
+
+The simple variant drops the box and keeps only a colored left rule:
+
+::: {.callout-note appearance="simple"}
+A simple-style callout — minimal chrome, left bar only.
+:::
+
+## Code blocks
+
+Code blocks sit on the surface tone with a hairline border, rounded just enough to feel made, with a small monospace language tag in the top-right. Copy buttons reveal on hover.
+
+```python
+from __future__ import annotations
+import polars as pl
+
+def monthly_recurring_revenue(invoices: pl.DataFrame) -> pl.DataFrame:
+    """Normalize all billing periods to a monthly cadence."""
+    return (
+        invoices
+        .filter(pl.col("status") == "paid")
+        .with_columns(
+            mrr=pl.when(pl.col("period") == "yearly")
+              .then(pl.col("amount") / 12)
+              .otherwise(pl.col("amount"))
+        )
+        .group_by(pl.col("invoice_date").dt.truncate("1mo"))
+        .agg(pl.col("mrr").sum().alias("total_mrr"))
+        .sort("invoice_date")
+    )
+```
+
+```sql
+-- Subscriptions with at least one paid invoice in the last 30 days
+select
+    s.id           as subscription_id,
+    s.customer_id,
+    s.plan_id,
+    sum(i.amount)  as revenue_30d
+from subscriptions s
+join invoices i on i.subscription_id = s.id
+where i.status = 'paid'
+  and i.paid_at >= now() - interval '30 days'
+group by 1, 2, 3
+order by revenue_30d desc
+limit 25;
+```
+
+```r
+library(ggplot2)
+ggplot(mpg, aes(displ, hwy, color = class)) +
+  geom_point(alpha = 0.7, size = 2.5) +
+  geom_smooth(method = "loess", se = FALSE) +
+  scale_color_viridis_d(option = "magma") +
+  theme_minimal(base_family = "Geist")
+```
+
+Inline `python` like `df.groupby('region').agg('sum')` flows into prose without breaking the baseline.
+
+## Tables
+
+Tables get a hairline border, rounded corners, mono-caps headers, and tabular figures via `.numeric`.
+
+| Region        | Stations | Active rate | Avg connections / day |
+|:--------------|---------:|------------:|----------------------:|
+| France        |   12,847 |       82.4% |                  1.42 |
+| Spain         |    3,210 |       77.1% |                  1.18 |
+| Germany       |    2,508 |       88.9% |                  1.61 |
+| Italy         |    1,892 |       73.0% |                  0.97 |
+| United States |      441 |       65.8% |                  0.84 |
+
+: Active stations and connection density by region {.striped tbl-colwidths="[30,18,18,34]"}
+
+## Figures
+
+Figures sit centered with a Fraunces-italic caption beneath.
+
+![A placeholder figure — replace with your output. Captions read in italic so they recede from the artwork.](https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80){#fig-example fig-alt="Abstract pattern" width=100%}
+
+Cross-reference it as @fig-example for a hover popup.
+
+## Math
+
+Inline math like $e^{i\pi} + 1 = 0$ flows in the baseline. Display math gets generous vertical space:
+
+$$
+\operatorname{MRR}_t = \sum_{s \in \mathcal{S}_t}
+\begin{cases}
+\dfrac{\text{amount}_s}{12} & \text{if billing}_s = \text{yearly} \\[6pt]
+\dfrac{\text{amount}_s}{3}  & \text{if billing}_s = \text{quarterly} \\[6pt]
+\text{amount}_s             & \text{if billing}_s = \text{monthly}
+\end{cases}
+$$ {#eq-mrr}
+
+Reference equations with @eq-mrr.
+
+## Lists
+
+Bulleted lists use an amber marker:
+
+- Generous line-height for scannable items.
+- Nested lists inherit the same rhythm.
+  - Second level
+  - With its own marker color
+- A tighter top margin keeps adjacent text close.
+
+Numbered lists are equally restrained:
+
+1. First, define the question.
+2. Then, pick the smallest dataset that answers it.
+3. Finally, ship the chart.
+
+Definition lists:
+
+API
+:   The interface another developer talks to.
+
+UX
+:   The interface your user talks to.
+
+## Footnotes
+
+Footnote markers sit as small rounded mono pills[^1] — quieter than the default superscript. Hover for the contents; the full list collects at the bottom.[^2]
+
+[^1]: Inspired by Stripe Press: small, restrained, unmistakable.
+[^2]: With a generous top border so the footnote section reads as its own register.
+
+## Keyboard shortcuts and abbreviations
+
+Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd> to open the command palette. Acronyms like <abbr title="Annual Recurring Revenue">ARR</abbr> render with a dotted underline.
+
+## A horizontal rule
+
+The horizontal rule is a short centered hairline — a quiet break rather than a decorative fleuron.
+
+---
+
+## Cell outputs
+
+Below is how Jupyter cell outputs render in this template — set on a deeper surface so they read as the document's quiet voice replying to the code.
+
+```{=html}
+<div class="cell">
+  <pre class="sourceCode python"><code class="sourceCode python">df.head()</code></pre>
+  <div class="cell-output">
+    <pre><code>   region  stations  active_rate
+0  France     12847        0.824
+1  Spain       3210        0.771
+2  Germany    2508         0.889</code></pre>
+  </div>
+</div>
+```
+
+## Closing notes
+
+Every color is a CSS custom property in `theme.scss`. To change the accent — say from amber to a cooler instrument cyan — edit `--c-accent` and `--c-accent-bright`. To change the type family, override `mainfont` in `_quarto.yml` and `$font-family-sans-serif` in `theme.scss`.
+
+::: {.callout-tip appearance="simple"}
+Render with `quarto render template.qmd` from the template directory.
+:::
