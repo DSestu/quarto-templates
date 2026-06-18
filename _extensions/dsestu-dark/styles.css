@@ -117,43 +117,7 @@ nav#TOC h1::after, nav#TOC h2::after, nav#TOC h3::after,
 nav#TOC h4::after, nav#TOC h5::after, nav#TOC h6::after,
 #title-block-header h1::before, #title-block-header h1::after { content: none !important; display: none !important; }
 
-/* Animated accent tick above EVERY heading — thin hairline with a slow drift.
-   Per-level width tapers down so hierarchy is preserved. */
-h1::before, h2::before, h3::before, h4::before, h5::before, h6::before {
-  content: "";
-  position: absolute;
-  top: -0.45em;
-  left: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--heading-c, var(--c-accent)) 40%, transparent) 22%,
-    color-mix(in srgb, var(--heading-c, var(--c-accent)) 65%, transparent) 50%,
-    color-mix(in srgb, var(--heading-c, var(--c-accent)) 40%, transparent) 78%,
-    transparent 100%
-  );
-  background-size: 260% 100%;
-  background-position: 260% 50%;
-  animation: heading-tick 14s linear infinite;
-  animation-delay: var(--anim-delay, 0s);
-  border-radius: 1px;
-  opacity: 0.9;
-}
-
-h1::before { width: 22rem; }
-h2::before { width: 18rem; }
-h3::before { width: 14rem; }
-h4::before { width: 10rem; }
-h5::before { width: 7rem;  }
-h6::before { width: 5rem;  }
-
-@keyframes heading-tick {
-  from { background-position: 260% 50%; }
-  to   { background-position:   0% 50%; }
-}
-
-/* Per-level accent colors for both tick AND text shimmer */
+/* Per-level accent colors used by the text shimmer */
 h1 { --heading-c: var(--c-accent); }                  /* amber */
 h2 { --heading-c: var(--c-callout-note-fg); }         /* blue */
 h3 { --heading-c: var(--c-callout-tip-fg); }          /* green */
@@ -161,30 +125,35 @@ h4 { --heading-c: var(--c-callout-caut-fg); }         /* violet */
 h5 { --heading-c: var(--c-callout-imp-fg); }          /* pink */
 h6 { --heading-c: var(--c-text-faint); }              /* faint */
 
-/* Subtle text-shimmer on every heading — a bright spot slowly drifts through
-   the letters. Uses the per-level --heading-c for variety. */
+/* Quiet text shimmer on every heading — a slim, soft tint band drifts
+   through the letters. Visible but not loud. */
 h1, h2, h3, h4, h5, h6 {
   background-image: linear-gradient(
     100deg,
-    var(--c-text-bright) 0%,
+    var(--c-text-bright)  0%,
     var(--c-text-bright) 42%,
-    color-mix(in srgb, var(--heading-c, var(--c-accent)) 90%, var(--c-text-bright)) 50%,
+    color-mix(in srgb, var(--heading-c, var(--c-accent)) 35%, var(--c-text-bright)) 50%,
     var(--c-text-bright) 58%,
     var(--c-text-bright) 100%
   );
-  background-size: 300% 100%;
-  background-position: 300% 50%;
+  background-size: 320% 100%;
+  background-position: 320% 50%;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  animation: heading-shimmer 16s linear infinite;
+  animation: heading-shimmer 18s linear infinite;
   animation-delay: var(--anim-delay-2, 0s);
 }
 
 @keyframes heading-shimmer {
-  from { background-position: 300% 50%; }
+  from { background-position: 320% 50%; }
   to   { background-position:   0% 50%; }
+}
+
+/* Section numbers ("1 Title" → "1. Title") */
+.header-section-number::after {
+  content: ".";
 }
 
 /* Animated underline under headings — sits below text, drifts independently */
@@ -776,14 +745,13 @@ details.code-fold > summary {
 }
 
 .callout,
-div.sourceCode,
 pre,
 .cell-output {
   position: relative;
 }
 
 .callout::after,
-div.sourceCode::after,
+pre::after,
 .cell-output::after {
   content: "";
   position: absolute;
@@ -793,7 +761,7 @@ div.sourceCode::after,
   background: conic-gradient(
     from var(--outline-angle),
     transparent 0deg,
-    color-mix(in oklab, var(--callout-c, var(--c-accent)) 65%, transparent) 18deg,
+    color-mix(in oklab, var(--callout-c, var(--c-accent)) 39%, transparent) 18deg,
     transparent 60deg,
     transparent 360deg
   );
@@ -806,11 +774,23 @@ div.sourceCode::after,
   animation-delay: var(--anim-delay-3, 0s);
   pointer-events: none;
   z-index: 1;
+  opacity: 0.6;
 }
 
 /* Slower rotation for code blocks so the page doesn't feel busy */
-div.sourceCode::after { animation-duration: 14s; }
-.cell-output::after   { animation-duration: 16s; }
+pre::after          { animation-duration: 14s; }
+
+/* Cell outputs get a blue outline variant — distinct from gold code blocks */
+.cell-output::after {
+  animation-duration: 16s;
+  background: conic-gradient(
+    from var(--outline-angle),
+    transparent 0deg,
+    color-mix(in oklab, var(--c-callout-note-fg) 50%, transparent) 18deg,
+    transparent 60deg,
+    transparent 360deg
+  );
+}
 
 /* Respect user motion preferences */
 @media (prefers-reduced-motion: reduce) {
@@ -927,21 +907,21 @@ div.callout.callout-style-simple,
     100deg,
     var(--c-text-bright) 0%,
     var(--c-text-bright) 44%,
-    color-mix(in srgb, var(--c-accent) 80%, var(--c-text-bright)) 50%,
+    color-mix(in srgb, var(--c-accent) 50%, var(--c-text-bright)) 50%,
     var(--c-text-bright) 56%,
     var(--c-text-bright) 100%
   );
-  background-size: 320% 100%;
-  background-position: 320% 50%;
+  background-size: 340% 100%;
+  background-position: 340% 50%;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  animation: title-shimmer 14s linear infinite;
+  animation: title-shimmer 18s linear infinite;
 }
 
 @keyframes title-shimmer {
-  from { background-position: 320% 50%; }
+  from { background-position: 340% 50%; }
   to   { background-position:   0% 50%; }
 }
 
