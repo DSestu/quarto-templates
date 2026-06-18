@@ -71,7 +71,8 @@ $border-radius-lg: 0.75rem;
 
 /*-- scss:rules --*/
 
-:root {
+:root,
+:root[data-theme="dark"] {
   --c-bg:           #{$ink-900};
   --c-bg-deep:      #{$ink-950};
   --c-surface:      #{$ink-800};
@@ -104,5 +105,64 @@ $border-radius-lg: 0.75rem;
   --c-callout-caut-bg:    #{rgba(#a78bd8, 0.07)};
   --c-callout-caut-bd:    #{rgba(#a78bd8, 0.26)};
 
+  /* Syntax token palette — dark */
+  --c-syntax-kw:    #d8a8f0;   /* declarations: def, class, import, from */
+  --c-syntax-cf:    #f29ab6;   /* control flow: if, else, return, for */
+  --c-syntax-fu:    #c2e890;   /* function names (definition + call site) */
+  --c-syntax-bu:    #7dd3fc;   /* builtins: print, len, pl.col */
+  --c-syntax-num:   #fbbf77;   /* numbers: 12, 3.14 */
+  --c-syntax-dt:    #67e8f9;   /* data types: int, str, DataFrame, varchar */
+  --c-syntax-cn:    #7dd3fc;   /* constants: True, False, None, null */
+  --c-syntax-at:    #f6c969;   /* attributes / method calls */
+  --c-syntax-st:    #f0c977;   /* strings — slightly warmer than accent */
+
   color-scheme: dark;
+}
+
+// ─── Light palette — paper-like, same amber accent ──────────────────────────
+:root[data-theme="light"] {
+  --c-bg:           #f5f2ea;
+  --c-bg-deep:      #ece8dc;
+  --c-surface:      #efebe0;
+  --c-surface-2:    #e6e1d3;
+  --c-text:         #1a1f27;
+  --c-text-bright:  #0e1116;
+  --c-text-muted:   #4a525e;
+  --c-text-faint:   #7a8290;
+  --c-border:       #d4cebd;
+  --c-border-soft:  #e2dcca;
+  --c-border-strong:#b8b1a0;
+  --c-accent:       #b67817;
+  --c-accent-bright:#9c6710;
+  --c-accent-soft:  #{rgba(#b67817, 0.14)};
+  --c-selection:    #{rgba(#b67817, 0.22)};
+
+  --c-callout-note-fg:    #2e64b8;
+  --c-callout-note-bg:    #{rgba(#3a73c2, 0.07)};
+  --c-callout-note-bd:    #{rgba(#3a73c2, 0.32)};
+  --c-callout-tip-fg:     #2c7a4a;
+  --c-callout-tip-bg:     #{rgba(#3a9265, 0.06)};
+  --c-callout-tip-bd:     #{rgba(#3a9265, 0.28)};
+  --c-callout-warn-fg:    #a36812;
+  --c-callout-warn-bg:    #{rgba(#c98715, 0.08)};
+  --c-callout-warn-bd:    #{rgba(#c98715, 0.32)};
+  --c-callout-imp-fg:     #b53939;
+  --c-callout-imp-bg:     #{rgba(#cf4848, 0.06)};
+  --c-callout-imp-bd:     #{rgba(#cf4848, 0.28)};
+  --c-callout-caut-fg:    #6f44a6;
+  --c-callout-caut-bg:    #{rgba(#7e57b8, 0.06)};
+  --c-callout-caut-bd:    #{rgba(#7e57b8, 0.28)};
+
+  /* Syntax token palette — light */
+  --c-syntax-kw:    #7c3fab;   /* declarations */
+  --c-syntax-cf:    #c2185b;   /* control flow */
+  --c-syntax-fu:    #4d6f1f;   /* function names */
+  --c-syntax-bu:    #0e7490;   /* builtins */
+  --c-syntax-num:   #b75418;   /* numbers */
+  --c-syntax-dt:    #0891b2;   /* data types */
+  --c-syntax-cn:    #0e7490;   /* constants */
+  --c-syntax-at:    #9c6710;   /* attributes / methods */
+  --c-syntax-st:    #a85a14;   /* strings */
+
+  color-scheme: light;
 }

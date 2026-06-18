@@ -55,7 +55,8 @@ body .quarto-document-content {
 
 /* TOC sidebar column */
 body #quarto-sidebar,
-body .sidebar.sidebar-navigation {
+body .sidebar.sidebar-navigation,
+body .sidebar.toc-left {
   grid-column: screen-start / body-start !important;
   padding-right: 1.5rem;
 }
@@ -213,8 +214,11 @@ a:focus-visible {
 
 /* ─── Code: inline + blocks ──────────────────────────────────────────────── */
 
-code:not(pre code) {
-  background: var(--c-surface-2);
+code:not(pre code),
+p code:not(.sourceCode),
+li code:not(.sourceCode),
+td code:not(.sourceCode) {
+  background: var(--c-surface-2) !important;
   color: var(--c-text-bright);
   padding: 0.1em 0.4em;
   border-radius: 0.3em;
@@ -234,6 +238,7 @@ div.sourceCode,
 pre.sourceCode,
 pre {
   background: var(--c-surface) !important;
+  color: var(--c-text) !important;
   border: 1px solid var(--c-border);
   border-radius: 0.6rem;
   padding: 1.125rem 1.25rem;
@@ -289,21 +294,100 @@ pre:hover .code-copy-button { opacity: 1; }
   border-color: var(--c-accent) !important;
 }
 
-/* Pandoc syntax highlighting on dark surface */
-pre code.sourceCode .co { color: var(--c-text-faint); font-style: italic; }
-pre code.sourceCode .kw { color: #d8a8f0; font-weight: 500; }
-pre code.sourceCode .cf { color: #d8a8f0; }
-pre code.sourceCode .fu { color: #9dd9b6; }
-pre code.sourceCode .st { color: var(--c-accent); }
-pre code.sourceCode .ch { color: var(--c-accent); }
+/* Pandoc syntax highlighting — driven by theme-aware CSS variables.
+   !important needed to override Quarto's compiled highlight-style (github-dark). */
+
+/* Default identifier/operator/whitespace spans inherit from pre's color */
+pre code.sourceCode > span,
+code.sourceCode > span,
+code span {
+  color: inherit !important;
+}
+
+/* Comments */
+pre code.sourceCode .co,
+pre code.sourceCode .cv,
+pre code.sourceCode .do {
+  color: var(--c-text-faint) !important;
+  font-style: italic;
+}
+
+/* Declarations: def, class, import, from */
+pre code.sourceCode .kw,
+pre code.sourceCode .im {
+  color: var(--c-syntax-kw) !important;
+  font-weight: 500;
+}
+
+/* Control flow: if, else, return, for, while, try, except, yield */
+pre code.sourceCode .cf {
+  color: var(--c-syntax-cf) !important;
+  font-weight: 500;
+}
+
+/* Function names (definition + call site) */
+pre code.sourceCode .fu {
+  color: var(--c-syntax-fu) !important;
+}
+
+/* Builtins: print, len, pl.col, sum (Python's builtin functions) */
+pre code.sourceCode .bu {
+  color: var(--c-syntax-bu) !important;
+}
+
+/* Data types: int, str, DataFrame, varchar */
+pre code.sourceCode .dt {
+  color: var(--c-syntax-dt) !important;
+}
+
+/* Constants: True, False, None, null */
+pre code.sourceCode .cn {
+  color: var(--c-syntax-cn) !important;
+  font-weight: 500;
+}
+
+/* Strings + chars */
+pre code.sourceCode .st,
+pre code.sourceCode .ch,
+pre code.sourceCode .vs,
+pre code.sourceCode .ss {
+  color: var(--c-syntax-st) !important;
+}
+
+/* Numbers */
 pre code.sourceCode .dv,
 pre code.sourceCode .fl,
-pre code.sourceCode .bn { color: #8db3f0; }
-pre code.sourceCode .op { color: var(--c-text-muted); }
-pre code.sourceCode .va { color: var(--c-text-bright); }
-pre code.sourceCode .at { color: var(--c-accent-bright); }
-pre code.sourceCode .im { color: #d8a8f0; }
-pre code.sourceCode .dt { color: #8db3f0; }
+pre code.sourceCode .bn,
+pre code.sourceCode .in {
+  color: var(--c-syntax-num) !important;
+}
+
+/* Operators (=, ==, +, etc.) — kept subtle */
+pre code.sourceCode .op,
+pre code.sourceCode .sc {
+  color: var(--c-text-muted) !important;
+}
+
+/* Variables — default text */
+pre code.sourceCode .va {
+  color: var(--c-text-bright) !important;
+}
+
+/* Attributes / method calls / decorators */
+pre code.sourceCode .at {
+  color: var(--c-syntax-at) !important;
+}
+
+/* Other / preprocessor — pick something subtle */
+pre code.sourceCode .ot,
+pre code.sourceCode .pp {
+  color: var(--c-syntax-at) !important;
+}
+
+/* Annotation, alert, error — keep these distinct (uncommon) */
+pre code.sourceCode .an { color: var(--c-text-muted) !important; font-style: italic; }
+pre code.sourceCode .al { color: #ed7c7c !important; font-weight: 500; }
+pre code.sourceCode .er { color: #ed7c7c !important; text-decoration: underline wavy; }
 
 /* ─── Blockquotes ────────────────────────────────────────────────────────── */
 
@@ -466,7 +550,6 @@ div.callout.callout-style-simple,
   margin-bottom: 4rem;
   padding-bottom: 2rem;
   position: relative;
-  max-width: 78ch;
 }
 
 #title-block-header::after {
@@ -531,7 +614,6 @@ div.callout.callout-style-simple,
   line-height: 1.02;
   margin: 0 0 1rem 0;
   color: var(--c-text-bright);
-  max-width: 24ch;
 }
 
 #title-block-header .quarto-title .subtitle,
@@ -544,7 +626,6 @@ div.callout.callout-style-simple,
   line-height: 1.45;
   margin: 0;
   letter-spacing: -0.005em;
-  max-width: 60ch;
 }
 
 /* Description / abstract */
@@ -555,7 +636,6 @@ div.callout.callout-style-simple,
   font-weight: 400;
   line-height: 1.6;
   color: var(--c-text-muted);
-  max-width: 60ch;
   margin-top: 1.5rem;
 }
 
@@ -588,115 +668,341 @@ div.callout.callout-style-simple,
   text-decoration: none;
 }
 
-/* ─── Left TOC — calibrated tick scale ───────────────────────────────────── */
+/* ─── Left TOC — always-visible legend ───────────────────────────────────── */
 
+:root {
+  --toc-col-width: 16rem;
+  --toc-dot-size: 4px;
+  --toc-dot-size-active: 7px;
+  --toc-button-zone: 3.5rem;
+}
+
+/* Grid column reads from --toc-col-width (toggle button collapses it to 0) */
+body .page-columns.page-layout-article,
+body .page-columns {
+  grid-template-columns:
+    [screen-start screen-start-inset page-start page-start-inset body-start-outset]
+      var(--toc-col-width)
+    [body-start body-content-start]
+      1fr
+    [body-content-end body-end body-end-outset page-end-inset page-end screen-end-inset screen-end] !important;
+}
+
+/* Sidebar wrapper — sticky, button zone */
 #quarto-sidebar,
-.sidebar,
+.sidebar.sidebar-navigation,
+.sidebar.toc-left {
+  position: sticky;
+  top: 1.5rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 3rem);
+  padding-top: var(--toc-button-zone);
+  padding-right: 1.25rem;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-border-strong) transparent;
+}
+
+/* TOC container — fills its grid column */
 nav#TOC,
 nav[role="doc-toc"] {
+  position: relative;
+  width: 100%;
   font-family: "Geist", system-ui, sans-serif;
   font-size: 0.8125rem;
-  line-height: 1.55;
+  line-height: 1.4;
   background: transparent;
   border: none;
 }
 
-#TOC > ul, nav[role="doc-toc"] > ul,
-.sidebar nav ul {
-  list-style: none;
-  padding-left: 0;
-  margin: 0;
-  position: relative;
-}
-
-#TOC ul ul, nav[role="doc-toc"] ul ul {
-  padding-left: 1.25rem;
-  border-left: none;
-  list-style: none;
-  margin: 0.25em 0;
-}
-
-#TOC li, nav[role="doc-toc"] li,
-.sidebar nav li { margin: 0; padding: 0; }
-
-#TOC a, nav[role="doc-toc"] a,
-.sidebar nav a {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.35em 0.5rem 0.35em 0;
-  color: var(--c-text-muted);
-  text-decoration: none;
-  transition: color 0.15s ease;
-  position: relative;
-}
-
-/* Tick mark left of every TOC entry */
-#TOC > ul > li > a::before,
-nav[role="doc-toc"] > ul > li > a::before {
-  content: "";
-  display: inline-block;
-  width: 14px;
-  height: 1px;
-  background: var(--c-border-strong);
-  flex-shrink: 0;
-  transition: background 0.15s ease, width 0.15s ease;
-}
-
-#TOC ul ul a::before,
-nav[role="doc-toc"] ul ul a::before {
-  content: "";
-  display: inline-block;
-  width: 8px;
-  height: 1px;
-  background: var(--c-border);
-  flex-shrink: 0;
-  transition: background 0.15s ease, width 0.15s ease;
-}
-
-#TOC a:hover, nav[role="doc-toc"] a:hover {
-  color: var(--c-text-bright);
-}
-#TOC a:hover::before, nav[role="doc-toc"] a:hover::before {
-  background: var(--c-text-muted);
-}
-
-#TOC a.active, nav[role="doc-toc"] a.active,
-#TOC li.active > a, nav[role="doc-toc"] li.active > a {
-  color: var(--c-accent);
-  font-weight: 500;
-}
-#TOC a.active::before, nav[role="doc-toc"] a.active::before,
-#TOC li.active > a::before, nav[role="doc-toc"] li.active > a::before {
-  background: var(--c-accent);
-  width: 20px;
-}
-
-/* TOC header label */
-.sidebar-title,
-#toc-title,
-.quarto-toc-header,
-.sidebar nav .sidebar-title {
+/* TOC title — small mono uppercase label above the entries */
+nav#TOC > h2#toc-title,
+.quarto-toc-header {
   font-family: "Geist Mono", ui-monospace, monospace;
   font-weight: 500;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   color: var(--c-text-faint);
-  margin-bottom: 1.25em;
+  margin: 0 0 1rem 0;
   padding: 0;
 }
 
-/* Sticky sidebar */
-.sidebar.sidebar-navigation,
-#quarto-sidebar {
-  position: sticky;
-  top: 1.5rem;
-  align-self: flex-start;
-  max-height: calc(100vh - 3rem);
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--c-border-strong) transparent;
+/* Lists — strip default styling */
+nav#TOC ul,
+nav[role="doc-toc"] ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+nav#TOC li,
+nav[role="doc-toc"] li {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Links — flex: dot + text label */
+nav#TOC a,
+nav[role="doc-toc"] a {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  padding: 0.3em 0;
+  color: var(--c-text-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 450;
+  letter-spacing: -0.005em;
+  transition: color 0.15s ease;
+  line-height: 1.4;
+  border: none;
+}
+
+nav#TOC ul ul a,
+nav[role="doc-toc"] ul ul a {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--c-text-faint);
+}
+
+/* Dot — small inline marker, fixed slot */
+nav#TOC a .toc-dot,
+nav[role="doc-toc"] a .toc-dot {
+  flex: 0 0 var(--toc-dot-size-active);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  top: -1px;
+}
+
+nav#TOC a .toc-dot::before,
+nav[role="doc-toc"] a .toc-dot::before {
+  content: "";
+  display: block;
+  width: var(--toc-dot-size);
+  height: var(--toc-dot-size);
+  border-radius: 50%;
+  background: var(--c-text-faint);
+  transition:
+    width 0.18s ease,
+    height 0.18s ease,
+    background-color 0.18s ease;
+}
+
+/* H3 dots — smaller and dimmer */
+nav#TOC ul ul a .toc-dot::before,
+nav[role="doc-toc"] ul ul a .toc-dot::before {
+  width: calc(var(--toc-dot-size) * 0.65);
+  height: calc(var(--toc-dot-size) * 0.65);
+  background: var(--c-border-strong);
+}
+
+/* Text label */
+nav#TOC a .toc-label,
+nav[role="doc-toc"] a .toc-label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+/* Link hover */
+nav#TOC a:hover,
+nav[role="doc-toc"] a:hover {
+  color: var(--c-text-bright);
+}
+
+nav#TOC a:hover .toc-dot::before,
+nav[role="doc-toc"] a:hover .toc-dot::before {
+  background: var(--c-text-bright);
+}
+
+/* Nested ULs — indent only the label so dots stay column-aligned */
+nav#TOC ul ul,
+nav[role="doc-toc"] ul ul {
+  padding-left: 0;
+}
+
+nav#TOC ul ul a .toc-label,
+nav[role="doc-toc"] ul ul a .toc-label {
+  padding-left: 0.875rem;
+}
+
+nav#TOC ul ul ul a .toc-label,
+nav[role="doc-toc"] ul ul ul a .toc-label {
+  padding-left: 1.75rem;
+}
+
+/* Active state — uses Quarto's native .active class */
+nav#TOC a.active .toc-dot::before,
+nav[role="doc-toc"] a.active .toc-dot::before {
+  width: var(--toc-dot-size-active);
+  height: var(--toc-dot-size-active);
+  background: var(--c-accent);
+}
+
+nav#TOC a.active,
+nav[role="doc-toc"] a.active {
+  color: var(--c-accent);
+  font-weight: 550;
+}
+
+/* ─── TOC toggle button ──────────────────────────────────────────────────── */
+
+/* Reserve top space so the toggle never overlaps headings or the title block */
+body main.content,
+body #quarto-document-content,
+body .quarto-document-content {
+  padding-top: var(--toc-button-zone);
+}
+
+/* Body class — fully hidden state (toggled off) */
+body.toc-hidden {
+  --toc-col-width: 0px;
+}
+
+body.toc-hidden .sidebar.toc-left,
+body.toc-hidden #quarto-sidebar {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-0.5rem);
+}
+
+body .sidebar.toc-left,
+body #quarto-sidebar {
+  transition:
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth grid resize when toggling */
+body .page-columns.page-layout-article,
+body .page-columns {
+  transition: grid-template-columns 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Floating toggle button — top-left corner, outside the rail */
+.toc-toggle {
+  position: fixed;
+  top: 0.875rem;
+  left: 0.875rem;
+  z-index: 60;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-soft);
+  border-radius: 0.45rem;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  padding: 0;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 4px 12px -4px rgba(0, 0, 0, 0.35);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.toc-toggle:hover {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text-bright);
+}
+
+.toc-toggle:active { transform: scale(0.94); }
+
+.toc-toggle:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+.toc-toggle .toc-icon {
+  position: absolute;
+  display: block;
+  transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toc-toggle .toc-icon-close { opacity: 1; transform: rotate(0deg); }
+.toc-toggle .toc-icon-open  { opacity: 0; transform: rotate(-90deg); }
+
+body.toc-hidden .toc-toggle .toc-icon-close { opacity: 0; transform: rotate(90deg); }
+body.toc-hidden .toc-toggle .toc-icon-open  { opacity: 1; transform: rotate(0deg); }
+
+/* Mobile: Quarto hides the TOC at <768px, so hide the toggle + reclaim padding */
+@media (max-width: 767.98px) {
+  .toc-toggle { display: none; }
+  body main.content,
+  body #quarto-document-content,
+  body .quarto-document-content {
+    padding-top: 0;
+  }
+}
+
+/* ─── Theme toggle button ────────────────────────────────────────────────── */
+
+.theme-toggle {
+  position: fixed;
+  top: 0.875rem;
+  left: calc(0.875rem + 34px + 0.5rem);
+  z-index: 60;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-soft);
+  border-radius: 0.45rem;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  padding: 0;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 4px 12px -4px rgba(0, 0, 0, 0.35);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--c-border);
+  color: var(--c-text-bright);
+}
+
+.theme-toggle:active { transform: scale(0.94); }
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+.theme-toggle .theme-icon {
+  position: absolute;
+  display: block;
+  transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Default (dark theme): show moon, hide sun */
+.theme-toggle .theme-icon-moon { opacity: 1; transform: rotate(0deg); }
+.theme-toggle .theme-icon-sun  { opacity: 0; transform: rotate(-90deg); }
+
+/* Light theme: show sun, hide moon */
+:root[data-theme="light"] .theme-toggle .theme-icon-moon { opacity: 0; transform: rotate(90deg); }
+:root[data-theme="light"] .theme-toggle .theme-icon-sun  { opacity: 1; transform: rotate(0deg); }
+
+@media (max-width: 767.98px) {
+  .theme-toggle { display: none; }
 }
 
 /* ─── Figures ────────────────────────────────────────────────────────────── */

@@ -61,4 +61,165 @@ contributes:
             <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
             <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet">
 
+      include-after-body:
+        - text: |
+            <script>
+            (function () {
+              "use strict";
+
+              function ready(fn) {
+                if (document.readyState !== "loading") { fn(); }
+                else { document.addEventListener("DOMContentLoaded", fn); }
+              }
+
+              // ─── Theme toggle (runs immediately to avoid flash) ─────────
+              (function () {
+                var THEME_KEY = "dsestu-theme";
+                var stored = null;
+                try { stored = localStorage.getItem(THEME_KEY); } catch (e) {}
+                var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+                var theme = stored || (prefersDark ? "dark" : "light");
+                document.documentElement.setAttribute("data-theme", theme);
+              })();
+
+              ready(function () {
+                // ─── Theme toggle button ─────────────────────────────────
+                var THEME_KEY = "dsestu-theme";
+                var themeBtn = document.createElement("button");
+                themeBtn.className = "theme-toggle";
+                themeBtn.type = "button";
+                themeBtn.setAttribute("aria-label", "Toggle color theme");
+                themeBtn.innerHTML =
+                  '<svg class="theme-icon theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                    '<circle cx="12" cy="12" r="4"/>' +
+                    '<line x1="12" y1="2"  x2="12" y2="4"/>' +
+                    '<line x1="12" y1="20" x2="12" y2="22"/>' +
+                    '<line x1="2"  y1="12" x2="4"  y2="12"/>' +
+                    '<line x1="20" y1="12" x2="22" y2="12"/>' +
+                    '<line x1="4.93"  y1="4.93"  x2="6.34"  y2="6.34"/>' +
+                    '<line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/>' +
+                    '<line x1="4.93"  y1="19.07" x2="6.34"  y2="17.66"/>' +
+                    '<line x1="17.66" y1="6.34"  x2="19.07" y2="4.93"/>' +
+                  '</svg>' +
+                  '<svg class="theme-icon theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                    '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>' +
+                  '</svg>';
+                document.body.appendChild(themeBtn);
+
+                function applyTheme(t) {
+                  document.documentElement.setAttribute("data-theme", t);
+                  themeBtn.setAttribute("aria-label", "Switch to " + (t === "dark" ? "light" : "dark") + " theme");
+                }
+                applyTheme(document.documentElement.getAttribute("data-theme") || "dark");
+
+                themeBtn.addEventListener("click", function () {
+                  var current = document.documentElement.getAttribute("data-theme") || "dark";
+                  var next = current === "dark" ? "light" : "dark";
+                  applyTheme(next);
+                  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+                });
+
+                var toc = document.querySelector("nav[role='doc-toc'], #TOC");
+
+                // ─── Toggle button ───────────────────────────────────────
+                var STORAGE_KEY = "dsestu-toc-hidden";
+                var btn = document.createElement("button");
+                btn.className = "toc-toggle";
+                btn.type = "button";
+                btn.setAttribute("aria-label", "Toggle contents");
+                btn.setAttribute("aria-expanded", "true");
+                btn.innerHTML =
+                  '<svg class="toc-icon toc-icon-close" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                    '<line x1="4" y1="6" x2="20" y2="6"/>' +
+                    '<line x1="4" y1="12" x2="14" y2="12"/>' +
+                    '<line x1="4" y1="18" x2="18" y2="18"/>' +
+                  '</svg>' +
+                  '<svg class="toc-icon toc-icon-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                    '<line x1="4" y1="6" x2="20" y2="6"/>' +
+                    '<line x1="4" y1="12" x2="20" y2="12"/>' +
+                    '<line x1="4" y1="18" x2="20" y2="18"/>' +
+                  '</svg>';
+                document.body.appendChild(btn);
+
+                function applyHidden(hidden) {
+                  document.body.classList.toggle("toc-hidden", hidden);
+                  btn.setAttribute("aria-expanded", String(!hidden));
+                  if (toc) toc.setAttribute("aria-hidden", String(hidden));
+                }
+
+                try { applyHidden(localStorage.getItem(STORAGE_KEY) === "1"); } catch (e) {}
+
+                btn.addEventListener("click", function () {
+                  var hidden = !document.body.classList.contains("toc-hidden");
+                  applyHidden(hidden);
+                  try { localStorage.setItem(STORAGE_KEY, hidden ? "1" : "0"); } catch (e) {}
+                });
+
+                if (!toc) return;
+
+                // Wrap each TOC link's text in a .toc-label and prepend a .toc-dot.
+                // Idempotent: skip if already wrapped.
+                var linksByHash = {};
+                toc.querySelectorAll("a").forEach(function (a) {
+                  if (!a.querySelector(".toc-dot")) {
+                    var text = a.textContent;
+                    a.textContent = "";
+                    var dot = document.createElement("span");
+                    dot.className = "toc-dot";
+                    dot.setAttribute("aria-hidden", "true");
+                    var label = document.createElement("span");
+                    label.className = "toc-label";
+                    label.textContent = text;
+                    a.appendChild(dot);
+                    a.appendChild(label);
+                  }
+                  var href = a.getAttribute("href") || "";
+                  if (href.charAt(0) === "#") {
+                    linksByHash[href.slice(1)] = a;
+                  }
+                });
+
+                // ─── Active tracking — scroll listener ────────────────────
+                // Pick the heading nearest to (but above) a band ~30% from the top.
+                // Quarto's native scrollspy is not reliable on this layout.
+                var headings = [];
+                Object.keys(linksByHash).forEach(function (id) {
+                  var el = document.getElementById(id);
+                  if (el) headings.push(el);
+                });
+                if (!headings.length) return;
+
+                function setActive(id) {
+                  var a = linksByHash[id];
+                  if (!a) return;
+                  toc.querySelectorAll("a.active").forEach(function (x) {
+                    if (x !== a) x.classList.remove("active");
+                  });
+                  a.classList.add("active");
+                }
+
+                var ticking = false;
+                function recompute() {
+                  ticking = false;
+                  var trigger = window.innerHeight * 0.3;
+                  var current = headings[0];
+                  for (var i = 0; i < headings.length; i++) {
+                    if (headings[i].getBoundingClientRect().top <= trigger) {
+                      current = headings[i];
+                    } else { break; }
+                  }
+                  setActive(current.id);
+                }
+
+                window.addEventListener("scroll", function () {
+                  if (ticking) return;
+                  ticking = true;
+                  requestAnimationFrame(recompute);
+                }, { passive: true });
+                window.addEventListener("resize", recompute);
+                recompute();
+              });
+            })();
+            </script>
+
       embed-resources: false

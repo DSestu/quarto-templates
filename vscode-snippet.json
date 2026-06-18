@@ -1,0 +1,29 @@
+{
+    "Quarto init": {
+		"prefix": "quarto_init",
+		"body": [
+			"---",
+			"format:",
+			"  dsestu-dark-html:",
+			"    title: '$0'",
+			"    author: 'David SESTU'",
+			"    categories: [notebook, python]",
+			"    description: \"Description\"",
+			"    self-contained: true",
+			"    page-layout: full",
+			"    smooth-scroll: true",
+			"    toc: true",
+			"    toc-location: left",
+			"    code-fold: show",
+			"    code-summary: 'Code'",
+			"    highlight-style: github",
+			"    code-copy: true",
+			"    code-tools: true",
+			"    date: today",
+			"    date-format: \"YYYY.MM.DD\"",
+			"number-sections: true",
+			"---"
+		],
+		"description": "Quarto init"
+	}
+}

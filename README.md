@@ -60,7 +60,41 @@ This pulls **all** templates from the repo and writes them under your project's 
 
 If `quarto add` doesn't work (offline, restricted network, etc.), see [Local install fallback](#local-install-fallback) below.
 
-### 2. Select the template
+### 2. Make your project a Quarto project
+
+Quarto only walks up the directory tree looking for `_extensions/` **when a project file is present** at the root. Without one, rendering a notebook from a subdirectory fails with:
+
+```
+ERROR: Unable to read the extension 'dsestu-dark'.
+```
+
+…even though `quarto list extensions` (which scans the current directory) reports the extension as installed. The fix is a one-line `_quarto.yml` at the same level where you installed the extension:
+
+```yaml
+# _quarto.yml — sits at the project root, next to _extensions/
+project:
+  type: default
+```
+
+That single declaration is enough — Quarto now treats the whole tree as one project and finds the extension from any notebook beneath it.
+
+You can also push the format default into the same file so notebooks don't need to repeat it in every raw cell:
+
+```yaml
+# _quarto.yml
+project:
+  type: default
+
+format:
+  dsestu-dark-html: default       # ← format string from the table
+```
+
+With this in place, any `.qmd` or `.ipynb` under the project root renders with the template automatically. Notebooks can still override or extend (title, author, categories, etc.) in their raw cell — they just don't need to re-declare the format.
+
+> [!NOTE]
+> Adding `_quarto.yml` makes the directory a Quarto project. The practical effect: `quarto render` with no arguments will try to build every renderable file under the root. To run a single file, name it explicitly: `quarto render path/to/notebook.ipynb`.
+
+### 3. Select the template
 
 Take the **Format string** from the [table above](#available-templates) and drop it under `format:`. The examples below use `dsestu-dark-html`; swap it for any other template's format string to switch.
 
@@ -107,7 +141,7 @@ Render with `quarto render notebook.ipynb`.
 > [!TIP]
 > In JupyterLab / VS Code, change the cell type via the dropdown above the cell (or `Esc` then `R` in JupyterLab). The raw cell must contain ONLY the YAML, fenced by `---` lines.
 
-### 3. Render
+### 4. Render
 
 ```bash
 quarto render notebook.ipynb       # single file
