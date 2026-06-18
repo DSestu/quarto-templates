@@ -3116,6 +3116,12 @@ opacity: 0.6;
 
 pre::after { animation-duration: 14s; }
 
+.cell-output pre::after,
+.cell-output-display pre::after { display: none; }
+
+.cell:has(.cell-output) pre::after,
+.cell:has(.cell-output-display) pre::after { display: none; }
+
 .cell-output::after {
 animation-duration: 16s;
 background: conic-gradient(

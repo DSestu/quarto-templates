@@ -780,6 +780,17 @@ pre::after,
 /* Slower rotation for code blocks so the page doesn't feel busy */
 pre::after          { animation-duration: 14s; }
 
+/* Suppress the gold pre outline inside cell outputs — the parent .cell-output
+   provides the blue outline, no need for an inner duplicate. */
+.cell-output pre::after,
+.cell-output-display pre::after { display: none; }
+
+/* When a code block sits inside a .cell that also contains a .cell-output,
+   treat them as one unit: only the cell-output's blue outline is drawn, the
+   input code block drops its gold outline. */
+.cell:has(.cell-output) pre::after,
+.cell:has(.cell-output-display) pre::after { display: none; }
+
 /* Cell outputs get a blue outline variant — distinct from gold code blocks */
 .cell-output::after {
   animation-duration: 16s;
