@@ -2471,7 +2471,7 @@ minmax(220px, 22vw)
 1fr
 [body-content-end body-end body-end-outset page-end-inset page-end screen-end-inset screen-end] !important;
 column-gap: 3rem;
-padding: 0 2.5rem;
+padding: 0 1.75rem !important;
 max-width: 100%;
 }
 
@@ -2480,7 +2480,9 @@ body #quarto-document-content,
 body .quarto-document-content {
 grid-column: body-content-start / screen-end !important;
 max-width: none;
+padding-left: 3rem;
 padding-right: 3rem;
+transition: padding-left 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body #quarto-sidebar,
@@ -2488,6 +2490,7 @@ body .sidebar.sidebar-navigation,
 body .sidebar.toc-left {
 grid-column: screen-start / body-start !important;
 padding-right: 1.5rem;
+padding-left: 1rem;
 }
 
 body #quarto-margin-sidebar { display: none !important; }
@@ -3239,6 +3242,65 @@ background: var(--c-surface);
 border-color: var(--c-border);
 color: var(--c-text-bright);
 }
+
+body:not(.toc-hidden) .toc-toggle,
+body.toc-peek .toc-toggle {
+color: var(--c-accent);
+border-color: color-mix(in srgb, var(--c-accent) 42%, var(--c-border-soft));
+background: color-mix(in srgb, var(--c-accent) 8%, var(--c-surface));
+}
+body:not(.toc-hidden) .toc-toggle:hover,
+body.toc-peek .toc-toggle:hover {
+color: var(--c-accent-bright);
+border-color: var(--c-accent);
+}
+
+.toc-peek-zone {
+position: fixed;
+top: 0;
+left: 0;
+width: 0;
+height: 100vh;
+z-index: 50;
+background: transparent;
+pointer-events: none;
+}
+body.toc-hidden .toc-peek-zone {
+width: 22px;
+pointer-events: auto;
+}
+
+body.toc-hidden.toc-peek .sidebar.toc-left,
+body.toc-hidden.toc-peek #quarto-sidebar {
+opacity: 1 !important;
+pointer-events: auto !important;
+position: fixed !important;
+top: 1rem !important;
+left: 1.75rem !important; 
+width: 16rem !important;
+max-height: calc(100vh - 2rem);
+z-index: 40;
+background: var(--c-bg);
+border: 1px solid var(--c-border-soft);
+border-radius: 0.6rem;
+box-shadow: 0 10px 30px -6px rgba(0, 0, 0, 0.45),
+0 0 0 1px color-mix(in srgb, var(--c-accent) 12%, transparent);
+padding: var(--toc-button-zone) 1rem 1rem 1rem;
+overflow-y: auto;
+transform: translateX(0) !important;
+transition:
+opacity 0.22s ease,
+transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+background-color 0.22s ease,
+box-shadow 0.22s ease;
+}
+
+body.toc-hidden .sidebar.toc-left,
+body.toc-hidden #quarto-sidebar {
+transition:
+opacity 0.22s ease,
+transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
 .toc-toggle:active { transform: scale(0.94); }
 .toc-toggle:focus-visible {
 outline: 2px solid var(--c-accent);
@@ -3310,6 +3372,95 @@ transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 :root[data-theme="light"] .theme-toggle .theme-icon-sun { opacity: 1; transform: rotate(0deg); }
 @media (max-width: 767.98px) {
 .theme-toggle { display: none; }
+}
+
+
+:root { interpolate-size: allow-keywords; }
+
+details.code-fold > *:not(summary) {
+overflow: hidden;
+height: auto;
+opacity: 1;
+transition:
+height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+opacity 0.22s ease;
+}
+details.code-fold.fold-closed > *:not(summary) {
+height: 0;
+opacity: 0;
+}
+
+details.code-fold > summary {
+list-style: none;
+cursor: pointer;
+display: inline-flex;
+align-items: center;
+gap: 0.4rem;
+padding: 0.25rem 0.6rem 0.25rem 0.5rem;
+margin-bottom: 0.4rem;
+font-family: "Geist Mono", ui-monospace, monospace;
+font-size: 0.7rem;
+font-weight: 500;
+text-transform: uppercase;
+letter-spacing: 0.14em;
+color: var(--c-text-muted);
+background: var(--c-surface);
+border: 1px solid var(--c-border-soft);
+border-radius: 0.4rem;
+user-select: none;
+transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+details.code-fold > summary:hover {
+color: var(--c-text-bright);
+border-color: var(--c-border);
+}
+details.code-fold > summary::-webkit-details-marker { display: none; }
+
+details.code-fold > summary::before {
+content: "";
+display: inline-block;
+width: 0;
+height: 0;
+border-style: solid;
+border-width: 4px 0 4px 6px;
+border-color: transparent transparent transparent currentColor;
+transform: rotate(90deg);
+transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+details.code-fold.fold-closed > summary::before {
+transform: rotate(0deg);
+}
+
+
+
+.cell:has(> details.code-fold.fold-group-middle),
+.cell:has(> details.code-fold.fold-group-last) {
+margin-top: 0 !important;
+}
+
+details.code-fold.fold-group-middle,
+details.code-fold.fold-group-last {
+margin-top: -0.4rem;
+}
+details.code-fold.fold-group-middle > summary,
+details.code-fold.fold-group-last > summary {
+display: none;
+}
+
+details.code-fold.fold-group-first > summary {
+position: relative;
+}
+details.code-fold.fold-group-first > summary::after {
+content: "+" attr(data-fold-count);
+margin-left: 0.4rem;
+padding: 0.05rem 0.4rem;
+font-size: 0.65rem;
+font-weight: 600;
+letter-spacing: 0.06em;
+color: var(--c-accent);
+background: var(--c-accent-soft);
+border-radius: 0.4rem;
+border: 1px solid color-mix(in srgb, var(--c-accent) 28%, transparent);
 }
 
 .code-fold-toggle {
@@ -3454,6 +3605,18 @@ color: var(--c-callout-warn-fg);
 table.dataframe {
 font-size: 0.8125rem;
 margin: 0.5em 0;
+}
+
+.cell-output .js-plotly-plot,
+.cell-output .plotly-graph-div,
+.cell-output-display .js-plotly-plot,
+.cell-output-display .plotly-graph-div {
+width: 100% !important;
+max-width: 100%;
+}
+.cell-output .plot-container,
+.cell-output-display .plot-container {
+width: 100% !important;
 }
 
 .footnote-ref a, a.footnote-ref {
@@ -4733,6 +4896,106 @@ The interface your user talks to.
   })();
 
   ready(function () {
+    // ─── Code-fold accordion setup ───────────────────────────
+    // Keep native <details open> always true; control visibility
+    // via a .fold-closed class so CSS can animate height: auto ↔ 0.
+    var allFolds = document.querySelectorAll("details.code-fold");
+    allFolds.forEach(function (d) {
+      var wasOpen = d.open;
+      d.open = true;
+      if (!wasOpen) d.classList.add("fold-closed");
+      var summary = d.querySelector("summary");
+      if (summary) {
+        summary.addEventListener("click", function (e) {
+          e.preventDefault();
+          d.classList.toggle("fold-closed");
+          recomputeFoldGroups();
+        });
+      }
+    });
+
+    // Two .code-fold details are "consecutive" when the DOM range
+    // between them contains no cell-output and no non-cell content
+    // (headings, paragraphs, etc.). Cell outputs MUST break the group
+    // so a code block followed by its output isn't fused with the
+    // next code block.
+    function isConsecutiveSibling(a, b) {
+      if (!a || !b) return false;
+      var aCell = a.closest(".cell");
+      var bCell = b.closest(".cell");
+      if (!aCell || !bCell) return false;
+      if (aCell.parentElement !== bCell.parentElement) return false;
+      // The cells must be adjacent siblings under the same parent.
+      var node = aCell.nextSibling;
+      while (node && node !== bCell) {
+        if (node.nodeType === 1) return false;
+        if (node.nodeType === 3 && node.textContent.trim()) return false;
+        node = node.nextSibling;
+      }
+      if (node !== bCell) return false;
+      // Inside cell A, after its code-fold details: anything except
+      // empty whitespace breaks the group (most importantly any
+      // .cell-output*).
+      var inside = a.nextSibling;
+      while (inside) {
+        if (inside.nodeType === 1) return false;
+        if (inside.nodeType === 3 && inside.textContent.trim()) return false;
+        inside = inside.nextSibling;
+      }
+      // Inside cell B, before its code-fold details: same rule.
+      inside = b.previousSibling;
+      while (inside) {
+        if (inside.nodeType === 1) return false;
+        if (inside.nodeType === 3 && inside.textContent.trim()) return false;
+        inside = inside.previousSibling;
+      }
+      return true;
+    }
+
+    function recomputeFoldGroups() {
+      // Clear previous group classes
+      allFolds.forEach(function (d) {
+        d.classList.remove("fold-group-first", "fold-group-middle", "fold-group-last", "fold-group-solo");
+        var s = d.querySelector("summary");
+        if (s) s.removeAttribute("data-fold-count");
+      });
+
+      // Walk in document order, building groups of consecutive .fold-closed
+      var groups = [];
+      var current = null;
+      allFolds.forEach(function (d) {
+        if (!d.classList.contains("fold-closed")) {
+          if (current) { groups.push(current); current = null; }
+          return;
+        }
+        if (current && isConsecutiveSibling(current[current.length - 1], d)) {
+          current.push(d);
+        } else {
+          if (current) groups.push(current);
+          current = [d];
+        }
+      });
+      if (current) groups.push(current);
+
+      groups.forEach(function (g) {
+        if (g.length === 1) {
+          g[0].classList.add("fold-group-solo");
+          return;
+        }
+        g.forEach(function (d, idx) {
+          if (idx === 0) d.classList.add("fold-group-first");
+          else if (idx === g.length - 1) d.classList.add("fold-group-last");
+          else d.classList.add("fold-group-middle");
+        });
+        var firstSummary = g[0].querySelector("summary");
+        if (firstSummary) {
+          firstSummary.setAttribute("data-fold-count", String(g.length));
+          firstSummary.setAttribute("title", g.length + " collapsed code blocks");
+        }
+      });
+    }
+    recomputeFoldGroups();
+
     // ─── Code-fold toggle button ─────────────────────────────
     var FOLD_KEY = "dsestu-code-folded";
     var foldBtn = document.createElement("button");
@@ -4757,12 +5020,13 @@ The interface your user talks to.
     function applyFold(folded) {
       document.body.classList.toggle("code-folded", folded);
       document.querySelectorAll("details.code-fold").forEach(function (d) {
-        d.open = !folded;
+        d.classList.toggle("fold-closed", folded);
       });
       foldBtn.setAttribute(
         "aria-label",
         folded ? "Expand all code blocks" : "Collapse all code blocks"
       );
+      if (typeof recomputeFoldGroups === "function") recomputeFoldGroups();
     }
 
     var foldedInit = false;
@@ -4846,6 +5110,101 @@ The interface your user talks to.
       applyHidden(hidden);
       try { localStorage.setItem(STORAGE_KEY, hidden ? "1" : "0"); } catch (e) {}
     });
+
+    // ─── Plotly: make plots fill their container width ───────
+    // Plotly figures created with width=... in px.* have an explicit
+    // layout.width that overrides the container. We clear it via
+    // relayout({width: null, autosize: true}) and then call
+    // Plots.resize() to redraw at the container's current width.
+    function resizeOnePlot(div) {
+      if (!div || !window.Plotly) return;
+      // Wait until Plotly has finished initialising this div
+      if (!div._fullLayout) return;
+      try {
+        var update = { autosize: true, width: null };
+        var p = window.Plotly.relayout(div, update);
+        if (p && p.then) {
+          p.then(function () { window.Plotly.Plots.resize(div); });
+        } else {
+          window.Plotly.Plots.resize(div);
+        }
+      } catch (e) {
+        try { window.Plotly.Plots.resize(div); } catch (e2) {}
+      }
+    }
+
+    function resizeAllPlots() {
+      if (typeof window.Plotly === "undefined") return;
+      document.querySelectorAll(
+        ".js-plotly-plot, .plotly-graph-div"
+      ).forEach(resizeOnePlot);
+    }
+
+    function whenPlotlyReady(cb, attempts) {
+      attempts = attempts == null ? 60 : attempts;
+      if (typeof window.Plotly !== "undefined") { cb(); return; }
+      if (attempts <= 0) return;
+      setTimeout(function () { whenPlotlyReady(cb, attempts - 1); }, 120);
+    }
+    whenPlotlyReady(function () {
+      // Plotly may render plots in stages — try a few times so we
+      // catch divs that finished initialising slightly later.
+      resizeAllPlots();
+      setTimeout(resizeAllPlots, 200);
+      setTimeout(resizeAllPlots, 600);
+      setTimeout(resizeAllPlots, 1500);
+
+      // ResizeObserver — react when any plot container changes size
+      if (typeof ResizeObserver !== "undefined") {
+        var ro = new ResizeObserver(function (entries) {
+          entries.forEach(function (e) {
+            if (e.target.matches(".js-plotly-plot, .plotly-graph-div")) {
+              resizeOnePlot(e.target);
+            }
+          });
+        });
+        document.querySelectorAll(
+          ".js-plotly-plot, .plotly-graph-div"
+        ).forEach(function (div) { ro.observe(div); });
+      }
+    });
+
+    var plotlyResizeT = null;
+    window.addEventListener("resize", function () {
+      if (plotlyResizeT) clearTimeout(plotlyResizeT);
+      plotlyResizeT = setTimeout(resizeAllPlots, 140);
+    });
+
+    // Re-resize plots after TOC toggle transition finishes
+    btn.addEventListener("click", function () {
+      setTimeout(resizeAllPlots, 380);
+    });
+
+    // ─── Peek-on-hover: left edge reveals TOC while hidden ───
+    var peekZone = document.createElement("div");
+    peekZone.className = "toc-peek-zone";
+    peekZone.setAttribute("aria-hidden", "true");
+    document.body.appendChild(peekZone);
+
+    var peekTimer = null;
+    function setPeek(on) {
+      if (peekTimer) { clearTimeout(peekTimer); peekTimer = null; }
+      if (on) {
+        document.body.classList.add("toc-peek");
+      } else {
+        peekTimer = setTimeout(function () {
+          document.body.classList.remove("toc-peek");
+          peekTimer = null;
+        }, 220);
+      }
+    }
+    peekZone.addEventListener("mouseenter", function () { setPeek(true); });
+    peekZone.addEventListener("mouseleave", function () { setPeek(false); });
+    var sidebarEl = document.querySelector(".sidebar.toc-left, #quarto-sidebar");
+    if (sidebarEl) {
+      sidebarEl.addEventListener("mouseenter", function () { setPeek(true); });
+      sidebarEl.addEventListener("mouseleave", function () { setPeek(false); });
+    }
 
     if (!toc) return;
 

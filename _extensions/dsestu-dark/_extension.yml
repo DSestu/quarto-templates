@@ -83,6 +83,106 @@ contributes:
               })();
 
               ready(function () {
+                // ─── Code-fold accordion setup ───────────────────────────
+                // Keep native <details open> always true; control visibility
+                // via a .fold-closed class so CSS can animate height: auto ↔ 0.
+                var allFolds = document.querySelectorAll("details.code-fold");
+                allFolds.forEach(function (d) {
+                  var wasOpen = d.open;
+                  d.open = true;
+                  if (!wasOpen) d.classList.add("fold-closed");
+                  var summary = d.querySelector("summary");
+                  if (summary) {
+                    summary.addEventListener("click", function (e) {
+                      e.preventDefault();
+                      d.classList.toggle("fold-closed");
+                      recomputeFoldGroups();
+                    });
+                  }
+                });
+
+                // Two .code-fold details are "consecutive" when the DOM range
+                // between them contains no cell-output and no non-cell content
+                // (headings, paragraphs, etc.). Cell outputs MUST break the group
+                // so a code block followed by its output isn't fused with the
+                // next code block.
+                function isConsecutiveSibling(a, b) {
+                  if (!a || !b) return false;
+                  var aCell = a.closest(".cell");
+                  var bCell = b.closest(".cell");
+                  if (!aCell || !bCell) return false;
+                  if (aCell.parentElement !== bCell.parentElement) return false;
+                  // The cells must be adjacent siblings under the same parent.
+                  var node = aCell.nextSibling;
+                  while (node && node !== bCell) {
+                    if (node.nodeType === 1) return false;
+                    if (node.nodeType === 3 && node.textContent.trim()) return false;
+                    node = node.nextSibling;
+                  }
+                  if (node !== bCell) return false;
+                  // Inside cell A, after its code-fold details: anything except
+                  // empty whitespace breaks the group (most importantly any
+                  // .cell-output*).
+                  var inside = a.nextSibling;
+                  while (inside) {
+                    if (inside.nodeType === 1) return false;
+                    if (inside.nodeType === 3 && inside.textContent.trim()) return false;
+                    inside = inside.nextSibling;
+                  }
+                  // Inside cell B, before its code-fold details: same rule.
+                  inside = b.previousSibling;
+                  while (inside) {
+                    if (inside.nodeType === 1) return false;
+                    if (inside.nodeType === 3 && inside.textContent.trim()) return false;
+                    inside = inside.previousSibling;
+                  }
+                  return true;
+                }
+
+                function recomputeFoldGroups() {
+                  // Clear previous group classes
+                  allFolds.forEach(function (d) {
+                    d.classList.remove("fold-group-first", "fold-group-middle", "fold-group-last", "fold-group-solo");
+                    var s = d.querySelector("summary");
+                    if (s) s.removeAttribute("data-fold-count");
+                  });
+
+                  // Walk in document order, building groups of consecutive .fold-closed
+                  var groups = [];
+                  var current = null;
+                  allFolds.forEach(function (d) {
+                    if (!d.classList.contains("fold-closed")) {
+                      if (current) { groups.push(current); current = null; }
+                      return;
+                    }
+                    if (current && isConsecutiveSibling(current[current.length - 1], d)) {
+                      current.push(d);
+                    } else {
+                      if (current) groups.push(current);
+                      current = [d];
+                    }
+                  });
+                  if (current) groups.push(current);
+
+                  groups.forEach(function (g) {
+                    if (g.length === 1) {
+                      g[0].classList.add("fold-group-solo");
+                      return;
+                    }
+                    g.forEach(function (d, idx) {
+                      if (idx === 0) d.classList.add("fold-group-first");
+                      else if (idx === g.length - 1) d.classList.add("fold-group-last");
+                      else d.classList.add("fold-group-middle");
+                    });
+                    var firstSummary = g[0].querySelector("summary");
+                    if (firstSummary) {
+                      firstSummary.setAttribute("data-fold-count", String(g.length));
+                      firstSummary.setAttribute("title", g.length + " collapsed code blocks");
+                    }
+                  });
+                }
+                recomputeFoldGroups();
+
                 // ─── Code-fold toggle button ─────────────────────────────
                 var FOLD_KEY = "dsestu-code-folded";
                 var foldBtn = document.createElement("button");
@@ -107,12 +207,13 @@ contributes:
                 function applyFold(folded) {
                   document.body.classList.toggle("code-folded", folded);
                   document.querySelectorAll("details.code-fold").forEach(function (d) {
-                    d.open = !folded;
+                    d.classList.toggle("fold-closed", folded);
                   });
                   foldBtn.setAttribute(
                     "aria-label",
                     folded ? "Expand all code blocks" : "Collapse all code blocks"
                   );
+                  if (typeof recomputeFoldGroups === "function") recomputeFoldGroups();
                 }
 
                 var foldedInit = false;
@@ -196,6 +297,101 @@ contributes:
                   applyHidden(hidden);
                   try { localStorage.setItem(STORAGE_KEY, hidden ? "1" : "0"); } catch (e) {}
                 });
+
+                // ─── Plotly: make plots fill their container width ───────
+                // Plotly figures created with width=... in px.* have an explicit
+                // layout.width that overrides the container. We clear it via
+                // relayout({width: null, autosize: true}) and then call
+                // Plots.resize() to redraw at the container's current width.
+                function resizeOnePlot(div) {
+                  if (!div || !window.Plotly) return;
+                  // Wait until Plotly has finished initialising this div
+                  if (!div._fullLayout) return;
+                  try {
+                    var update = { autosize: true, width: null };
+                    var p = window.Plotly.relayout(div, update);
+                    if (p && p.then) {
+                      p.then(function () { window.Plotly.Plots.resize(div); });
+                    } else {
+                      window.Plotly.Plots.resize(div);
+                    }
+                  } catch (e) {
+                    try { window.Plotly.Plots.resize(div); } catch (e2) {}
+                  }
+                }
+
+                function resizeAllPlots() {
+                  if (typeof window.Plotly === "undefined") return;
+                  document.querySelectorAll(
+                    ".js-plotly-plot, .plotly-graph-div"
+                  ).forEach(resizeOnePlot);
+                }
+
+                function whenPlotlyReady(cb, attempts) {
+                  attempts = attempts == null ? 60 : attempts;
+                  if (typeof window.Plotly !== "undefined") { cb(); return; }
+                  if (attempts <= 0) return;
+                  setTimeout(function () { whenPlotlyReady(cb, attempts - 1); }, 120);
+                }
+                whenPlotlyReady(function () {
+                  // Plotly may render plots in stages — try a few times so we
+                  // catch divs that finished initialising slightly later.
+                  resizeAllPlots();
+                  setTimeout(resizeAllPlots, 200);
+                  setTimeout(resizeAllPlots, 600);
+                  setTimeout(resizeAllPlots, 1500);
+
+                  // ResizeObserver — react when any plot container changes size
+                  if (typeof ResizeObserver !== "undefined") {
+                    var ro = new ResizeObserver(function (entries) {
+                      entries.forEach(function (e) {
+                        if (e.target.matches(".js-plotly-plot, .plotly-graph-div")) {
+                          resizeOnePlot(e.target);
+                        }
+                      });
+                    });
+                    document.querySelectorAll(
+                      ".js-plotly-plot, .plotly-graph-div"
+                    ).forEach(function (div) { ro.observe(div); });
+                  }
+                });
+
+                var plotlyResizeT = null;
+                window.addEventListener("resize", function () {
+                  if (plotlyResizeT) clearTimeout(plotlyResizeT);
+                  plotlyResizeT = setTimeout(resizeAllPlots, 140);
+                });
+
+                // Re-resize plots after TOC toggle transition finishes
+                btn.addEventListener("click", function () {
+                  setTimeout(resizeAllPlots, 380);
+                });
+
+                // ─── Peek-on-hover: left edge reveals TOC while hidden ───
+                var peekZone = document.createElement("div");
+                peekZone.className = "toc-peek-zone";
+                peekZone.setAttribute("aria-hidden", "true");
+                document.body.appendChild(peekZone);
+
+                var peekTimer = null;
+                function setPeek(on) {
+                  if (peekTimer) { clearTimeout(peekTimer); peekTimer = null; }
+                  if (on) {
+                    document.body.classList.add("toc-peek");
+                  } else {
+                    peekTimer = setTimeout(function () {
+                      document.body.classList.remove("toc-peek");
+                      peekTimer = null;
+                    }, 220);
+                  }
+                }
+                peekZone.addEventListener("mouseenter", function () { setPeek(true); });
+                peekZone.addEventListener("mouseleave", function () { setPeek(false); });
+                var sidebarEl = document.querySelector(".sidebar.toc-left, #quarto-sidebar");
+                if (sidebarEl) {
+                  sidebarEl.addEventListener("mouseenter", function () { setPeek(true); });
+                  sidebarEl.addEventListener("mouseleave", function () { setPeek(false); });
+                }
 
                 if (!toc) return;
 

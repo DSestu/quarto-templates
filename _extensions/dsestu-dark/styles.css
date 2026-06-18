@@ -40,17 +40,19 @@ body .page-columns {
       1fr
     [body-content-end body-end body-end-outset page-end-inset page-end screen-end-inset screen-end] !important;
   column-gap: 3rem;
-  padding: 0 2.5rem;
+  padding: 0 1.75rem !important;
   max-width: 100%;
 }
 
-/* Body content column spans from body-content-start to screen-end so it uses the full 75% */
+/* Body content column — equal L/R padding so it stays centered when TOC hides */
 body main.content,
 body #quarto-document-content,
 body .quarto-document-content {
   grid-column: body-content-start / screen-end !important;
   max-width: none;
+  padding-left: 3rem;
   padding-right: 3rem;
+  transition: padding-left 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* TOC sidebar column */
@@ -59,6 +61,7 @@ body .sidebar.sidebar-navigation,
 body .sidebar.toc-left {
   grid-column: screen-start / body-start !important;
   padding-right: 1.5rem;
+  padding-left: 1rem;
 }
 
 /* Hide the right margin column entirely */
@@ -96,6 +99,10 @@ h2 {
 }
 
 /* Short amber tick above each H2 — quiet section signal */
+nav#TOC h2::before,
+nav#TOC h2#toc-title::before,
+.quarto-toc-header::before { content: none !important; display: none !important; }
+
 h2::before {
   content: "";
   position: absolute;
@@ -918,6 +925,72 @@ body .page-columns {
   color: var(--c-text-bright);
 }
 
+/* TOC toggle — active (TOC visible) or peeking: accent color */
+body:not(.toc-hidden) .toc-toggle,
+body.toc-peek .toc-toggle {
+  color: var(--c-accent);
+  border-color: color-mix(in srgb, var(--c-accent) 42%, var(--c-border-soft));
+  background: color-mix(in srgb, var(--c-accent) 8%, var(--c-surface));
+}
+
+body:not(.toc-hidden) .toc-toggle:hover,
+body.toc-peek .toc-toggle:hover {
+  color: var(--c-accent-bright);
+  border-color: var(--c-accent);
+}
+
+/* ─── Peek hover zone — only active while TOC is hidden ──────────────────── */
+
+.toc-peek-zone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100vh;
+  z-index: 50;
+  background: transparent;
+  pointer-events: none;
+}
+
+body.toc-hidden .toc-peek-zone {
+  width: 22px;
+  pointer-events: auto;
+}
+
+/* Peek state — TOC slides in as a floating overlay; body content unmoved */
+body.toc-hidden.toc-peek .sidebar.toc-left,
+body.toc-hidden.toc-peek #quarto-sidebar {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  top: 1rem !important;
+  left: 1.75rem !important;            /* match outer page padding */
+  width: 16rem !important;
+  max-height: calc(100vh - 2rem);
+  z-index: 40;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border-soft);
+  border-radius: 0.6rem;
+  box-shadow: 0 10px 30px -6px rgba(0, 0, 0, 0.45),
+              0 0 0 1px color-mix(in srgb, var(--c-accent) 12%, transparent);
+  padding: var(--toc-button-zone) 1rem 1rem 1rem;
+  overflow-y: auto;
+  transform: translateX(0) !important;
+  transition:
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+/* Pre-peek collapsed position: just off-screen to the left */
+body.toc-hidden .sidebar.toc-left,
+body.toc-hidden #quarto-sidebar {
+  transition:
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .toc-toggle:active { transform: scale(0.94); }
 
 .toc-toggle:focus-visible {
@@ -1003,6 +1076,115 @@ body.toc-hidden .toc-toggle .toc-icon-open  { opacity: 1; transform: rotate(0deg
 
 @media (max-width: 767.98px) {
   .theme-toggle { display: none; }
+}
+
+/* ─── Code-fold accordion animation ──────────────────────────────────────── */
+
+/* Enable height: auto ↔ 0 transitions */
+:root { interpolate-size: allow-keywords; }
+
+/* Animate the content area of each foldable <details>. We keep [open]=true and
+   control visibility via the .fold-closed class (set by our JS). */
+details.code-fold > *:not(summary) {
+  overflow: hidden;
+  height: auto;
+  opacity: 1;
+  transition:
+    height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.22s ease;
+}
+
+details.code-fold.fold-closed > *:not(summary) {
+  height: 0;
+  opacity: 0;
+}
+
+/* Summary — make it look like a clickable, theme-aware control */
+details.code-fold > summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem 0.25rem 0.5rem;
+  margin-bottom: 0.4rem;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--c-text-muted);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-soft);
+  border-radius: 0.4rem;
+  user-select: none;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+details.code-fold > summary:hover {
+  color: var(--c-text-bright);
+  border-color: var(--c-border);
+}
+
+details.code-fold > summary::-webkit-details-marker { display: none; }
+
+/* Custom disclosure caret */
+details.code-fold > summary::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4px 0 4px 6px;
+  border-color: transparent transparent transparent currentColor;
+  transform: rotate(90deg);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+details.code-fold.fold-closed > summary::before {
+  transform: rotate(0deg);
+}
+
+/* ─── Consecutive-fold fusion ────────────────────────────────────────────── */
+
+/* When 2+ consecutive code-fold details are all collapsed, fuse them into one:
+   - Hide summaries on all but the first
+   - Collapse margins/gaps between cell wrappers
+   - Show count as a small badge on the first summary */
+
+/* Hide intermediate cells' wrappers visually */
+.cell:has(> details.code-fold.fold-group-middle),
+.cell:has(> details.code-fold.fold-group-last) {
+  margin-top: 0 !important;
+}
+
+/* Drop margins on intermediate/last details and their summaries */
+details.code-fold.fold-group-middle,
+details.code-fold.fold-group-last {
+  margin-top: -0.4rem;
+}
+
+details.code-fold.fold-group-middle > summary,
+details.code-fold.fold-group-last > summary {
+  display: none;
+}
+
+/* Count badge on the first summary of a fused group (≥2 collapsed) */
+details.code-fold.fold-group-first > summary {
+  position: relative;
+}
+
+details.code-fold.fold-group-first > summary::after {
+  content: "+" attr(data-fold-count);
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--c-accent);
+  background: var(--c-accent-soft);
+  border-radius: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 28%, transparent);
 }
 
 /* ─── Code-fold toggle button ────────────────────────────────────────────── */
@@ -1176,6 +1358,20 @@ kbd {
 table.dataframe {
   font-size: 0.8125rem;
   margin: 0.5em 0;
+}
+
+/* Plotly plots — let them fill the available width and re-flow on container resize */
+.cell-output .js-plotly-plot,
+.cell-output .plotly-graph-div,
+.cell-output-display .js-plotly-plot,
+.cell-output-display .plotly-graph-div {
+  width: 100% !important;
+  max-width: 100%;
+}
+
+.cell-output .plot-container,
+.cell-output-display .plot-container {
+  width: 100% !important;
 }
 
 /* ─── Footnotes ──────────────────────────────────────────────────────────── */
