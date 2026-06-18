@@ -1005,6 +1005,64 @@ body.toc-hidden .toc-toggle .toc-icon-open  { opacity: 1; transform: rotate(0deg
   .theme-toggle { display: none; }
 }
 
+/* ─── Code-fold toggle button ────────────────────────────────────────────── */
+
+.code-fold-toggle {
+  position: fixed;
+  top: 0.875rem;
+  left: calc(0.875rem + (34px + 0.5rem) * 2);
+  z-index: 60;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-soft);
+  border-radius: 0.45rem;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  padding: 0;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 4px 12px -4px rgba(0, 0, 0, 0.35);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.code-fold-toggle:hover {
+  border-color: var(--c-border);
+  color: var(--c-text-bright);
+}
+
+.code-fold-toggle:active { transform: scale(0.94); }
+
+.code-fold-toggle:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+.code-fold-toggle .fold-icon {
+  position: absolute;
+  display: block;
+  transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Default (code expanded): show collapse icon */
+.code-fold-toggle .fold-icon-collapse { opacity: 1; transform: rotate(0deg); }
+.code-fold-toggle .fold-icon-expand   { opacity: 0; transform: rotate(-90deg); }
+
+/* When code is folded: show expand icon */
+body.code-folded .code-fold-toggle .fold-icon-collapse { opacity: 0; transform: rotate(90deg); }
+body.code-folded .code-fold-toggle .fold-icon-expand   { opacity: 1; transform: rotate(0deg); }
+
+@media (max-width: 767.98px) {
+  .code-fold-toggle { display: none; }
+}
+
 /* ─── Figures ────────────────────────────────────────────────────────────── */
 
 figure, figure.figure { margin: 2.5em 0; }
