@@ -83,6 +83,48 @@ contributes:
               })();
 
               ready(function () {
+                // ─── Code-fold toggle button ─────────────────────────────
+                var FOLD_KEY = "dsestu-code-folded";
+                var foldBtn = document.createElement("button");
+                foldBtn.className = "code-fold-toggle";
+                foldBtn.type = "button";
+                foldBtn.setAttribute("aria-label", "Collapse all code blocks");
+                foldBtn.innerHTML =
+                  '<svg class="fold-icon fold-icon-collapse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                    '<polyline points="4 14 10 14 10 20"/>' +
+                    '<polyline points="20 10 14 10 14 4"/>' +
+                    '<line x1="14" y1="10" x2="21" y2="3"/>' +
+                    '<line x1="3" y1="21" x2="10" y2="14"/>' +
+                  '</svg>' +
+                  '<svg class="fold-icon fold-icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                    '<polyline points="15 3 21 3 21 9"/>' +
+                    '<polyline points="9 21 3 21 3 15"/>' +
+                    '<line x1="21" y1="3" x2="14" y2="10"/>' +
+                    '<line x1="3" y1="21" x2="10" y2="14"/>' +
+                  '</svg>';
+                document.body.appendChild(foldBtn);
+
+                function applyFold(folded) {
+                  document.body.classList.toggle("code-folded", folded);
+                  document.querySelectorAll("details.code-fold").forEach(function (d) {
+                    d.open = !folded;
+                  });
+                  foldBtn.setAttribute(
+                    "aria-label",
+                    folded ? "Expand all code blocks" : "Collapse all code blocks"
+                  );
+                }
+
+                var foldedInit = false;
+                try { foldedInit = localStorage.getItem(FOLD_KEY) === "1"; } catch (e) {}
+                applyFold(foldedInit);
+
+                foldBtn.addEventListener("click", function () {
+                  var folded = !document.body.classList.contains("code-folded");
+                  applyFold(folded);
+                  try { localStorage.setItem(FOLD_KEY, folded ? "1" : "0"); } catch (e) {}
+                });
+
                 // ─── Theme toggle button ─────────────────────────────────
                 var THEME_KEY = "dsestu-theme";
                 var themeBtn = document.createElement("button");
