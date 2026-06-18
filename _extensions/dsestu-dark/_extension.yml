@@ -83,6 +83,20 @@ contributes:
               })();
 
               ready(function () {
+                // ─── Desync background animations ────────────────────────
+                // Each animated element gets a random negative animation-delay
+                // so cycles drift apart across the page.
+                (function desyncAnimations() {
+                  function r() { return -(Math.random() * 12 + 0.2).toFixed(2) + "s"; }
+                  document.querySelectorAll(
+                    ".callout, .callout > .callout-header, h2, h3, div.sourceCode, pre, .cell-output, .footnote-ref, a.footnote-ref"
+                  ).forEach(function (el) {
+                    el.style.setProperty("--anim-delay", r());
+                    el.style.setProperty("--anim-delay-2", r());
+                    el.style.setProperty("--anim-delay-3", r());
+                  });
+                })();
+
                 // ─── Code-fold accordion setup ───────────────────────────
                 // Keep native <details open> always true; control visibility
                 // via a .fold-closed class so CSS can animate height: auto ↔ 0.
@@ -258,7 +272,13 @@ contributes:
                 themeBtn.addEventListener("click", function () {
                   var current = document.documentElement.getAttribute("data-theme") || "dark";
                   var next = current === "dark" ? "light" : "dark";
-                  applyTheme(next);
+                  // Smooth cross-fade via the View Transitions API; falls back
+                  // to CSS transitions on color/background-color (see styles.css).
+                  if (document.startViewTransition) {
+                    document.startViewTransition(function () { applyTheme(next); });
+                  } else {
+                    applyTheme(next);
+                  }
                   try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
                 });
 
