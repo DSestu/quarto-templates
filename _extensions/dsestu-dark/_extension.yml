@@ -20,7 +20,7 @@ contributes:
       smooth-scroll: true
       anchor-sections: true
 
-      code-tools: true
+      code-tools: false
       code-copy: hover
       code-link: true
       code-line-numbers: false
@@ -354,6 +354,97 @@ contributes:
                       ".js-plotly-plot, .plotly-graph-div"
                     ).forEach(function (div) { ro.observe(div); });
                   }
+
+                  // ─── Fullscreen toggle on each plot ─────────────────────
+                  function setupFullscreenButtons() {
+                    document.querySelectorAll(
+                      ".js-plotly-plot, .plotly-graph-div"
+                    ).forEach(function (div) {
+                      if (div.dataset.fsSetup) return;
+                      div.dataset.fsSetup = "1";
+
+                      // Wrap the plot so the button can be absolutely positioned
+                      var wrap = document.createElement("div");
+                      wrap.className = "plotly-fs-wrap";
+                      div.parentNode.insertBefore(wrap, div);
+                      wrap.appendChild(div);
+
+                      var btn = document.createElement("button");
+                      btn.type = "button";
+                      btn.className = "plotly-fs-btn";
+                      btn.setAttribute("aria-label", "Toggle fullscreen plot");
+                      btn.innerHTML =
+                        '<svg class="fs-icon fs-icon-enter" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                          '<polyline points="4 9 4 4 9 4"/>' +
+                          '<polyline points="20 9 20 4 15 4"/>' +
+                          '<polyline points="20 15 20 20 15 20"/>' +
+                          '<polyline points="4 15 4 20 9 20"/>' +
+                        '</svg>' +
+                        '<svg class="fs-icon fs-icon-exit" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                          '<polyline points="9 4 9 9 4 9"/>' +
+                          '<polyline points="15 4 15 9 20 9"/>' +
+                          '<polyline points="15 20 15 15 20 15"/>' +
+                          '<polyline points="9 20 9 15 4 15"/>' +
+                        '</svg>';
+                      wrap.appendChild(btn);
+
+                      function toggleFS() {
+                        var goFS = !wrap.classList.contains("is-fullscreen");
+                        var apply = function () {
+                          wrap.classList.toggle("is-fullscreen", goFS);
+                          document.body.classList.toggle("has-fullscreen-plot", goFS);
+                        };
+                        var afterToggle = function () {
+                          // Wait one frame, then resize the plot to the new bounds
+                          requestAnimationFrame(function () {
+                            requestAnimationFrame(function () { resizeOnePlot(div); });
+                          });
+                        };
+                        if (document.startViewTransition) {
+                          wrap.style.viewTransitionName = "plotly-fs-active";
+                          var t = document.startViewTransition(apply);
+                          t.finished.then(function () {
+                            wrap.style.viewTransitionName = "";
+                            afterToggle();
+                          });
+                        } else {
+                          apply();
+                          setTimeout(afterToggle, 320);
+                        }
+                      }
+
+                      btn.addEventListener("click", function (e) {
+                        e.stopPropagation();
+                        toggleFS();
+                      });
+                    });
+                  }
+                  setupFullscreenButtons();
+                  setTimeout(setupFullscreenButtons, 600);
+                  setTimeout(setupFullscreenButtons, 1500);
+
+                  // Escape exits fullscreen
+                  document.addEventListener("keydown", function (e) {
+                    if (e.key !== "Escape") return;
+                    var fs = document.querySelector(".plotly-fs-wrap.is-fullscreen");
+                    if (!fs) return;
+                    var plot = fs.querySelector(".js-plotly-plot, .plotly-graph-div");
+                    var apply = function () {
+                      fs.classList.remove("is-fullscreen");
+                      document.body.classList.remove("has-fullscreen-plot");
+                    };
+                    if (document.startViewTransition) {
+                      fs.style.viewTransitionName = "plotly-fs-active";
+                      var t = document.startViewTransition(apply);
+                      t.finished.then(function () {
+                        fs.style.viewTransitionName = "";
+                        if (plot) requestAnimationFrame(function () { resizeOnePlot(plot); });
+                      });
+                    } else {
+                      apply();
+                      if (plot) setTimeout(function () { resizeOnePlot(plot); }, 320);
+                    }
+                  });
                 });
 
                 var plotlyResizeT = null;
