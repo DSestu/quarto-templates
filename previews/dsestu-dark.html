@@ -2525,10 +2525,13 @@ font-size: clamp(1.375rem, 2.2vw, 1.625rem);
 font-weight: 550;
 letter-spacing: -0.022em;
 line-height: 1.2;
-padding-top: 1.75rem;
-margin-top: 4em;
 position: relative;
+
+border-bottom: 0;
+padding-bottom: 0;
 }
+
+h1, h3, h4, h5, h6 { border-bottom: 0; }
 
 nav#TOC h1::before, nav#TOC h2::before, nav#TOC h3::before,
 nav#TOC h4::before, nav#TOC h5::before, nav#TOC h6::before,
@@ -2545,7 +2548,7 @@ h4 { --heading-c: var(--c-callout-caut-fg); }
 h5 { --heading-c: var(--c-callout-imp-fg); } 
 h6 { --heading-c: var(--c-text-faint); } 
 
-h1, h2, h3, h4, h5, h6 {
+h1, h2, h3 {
 background-image: linear-gradient(
 100deg,
 var(--c-text-bright) 0%,
@@ -2579,28 +2582,30 @@ left: 0;
 right: 0;
 bottom: -0.5em;
 height: 1px;
-background: linear-gradient(
+background-image: linear-gradient(
 90deg,
-transparent 0%,
-var(--c-border) 25%,
-var(--c-border-strong) 50%,
-var(--c-border) 75%,
-transparent 100%
+color-mix(in srgb, var(--heading-c, var(--c-accent)) 25%, transparent) 0%,
+color-mix(in srgb, var(--heading-c, var(--c-accent)) 60%, transparent) 30%,
+var(--heading-c, var(--c-accent)) 50%,
+color-mix(in srgb, var(--heading-c, var(--c-accent)) 60%, transparent) 70%,
+color-mix(in srgb, var(--heading-c, var(--c-accent)) 25%, transparent) 100%
 );
-background-size: 260% 100%;
-background-position: 260% 50%;
+background-size: 100% 100%;
+background-repeat: repeat-x;
+background-position: 0% 50%;
 animation: heading-underline 18s linear infinite;
 animation-delay: var(--anim-delay-3, 0s);
 pointer-events: none;
-opacity: 0.6;
 }
+h1::after { opacity: 0.95; }
+h2::after { opacity: 0.75; }
+h3::after { opacity: 0.55; }
+h4::after { opacity: 0.4; }
+h5::after { opacity: 0.28; }
+h6::after { opacity: 0.18; }
 @keyframes heading-underline {
-from { background-position: 260% 50%; }
-to { background-position: -10% 50%; }
-}
-h3 {
-position: relative;
-padding-bottom: 0.4em;
+from { background-position: 0% 50%; }
+to { background-position: -100% 50%; }
 }
 h3 {
 font-size: 1.1875rem;
@@ -3118,9 +3123,6 @@ pre::after { animation-duration: 14s; }
 
 .cell-output pre::after,
 .cell-output-display pre::after { display: none; }
-
-.cell:has(.cell-output) pre::after,
-.cell:has(.cell-output-display) pre::after { display: none; }
 
 .cell-output::after {
 animation-duration: 16s;
@@ -3692,6 +3694,14 @@ height: 0;
 opacity: 0;
 }
 
+details.code-fold.fold-closed > summary {
+margin-bottom: 0;
+}
+
+.cell:has(> details.code-fold.fold-closed):not(:has(.cell-output, .cell-output-display, .cell-output-stdout, .cell-output-stderr)) {
+margin: 0.4em 0;
+}
+
 details.code-fold > summary {
 list-style: none;
 cursor: pointer;
@@ -3713,7 +3723,18 @@ background: var(--c-surface);
 border: 1px solid var(--c-border-soft);
 border-radius: 0.4rem;
 user-select: none;
-transition: color 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+transition:
+color 0.18s ease,
+border-color 0.18s ease,
+background-color 0.18s ease,
+height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+padding-top 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+padding-bottom 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+margin-top 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+margin-bottom 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+border-top-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+border-bottom-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+opacity 0.22s ease;
 }
 details.code-fold > summary::after {
 content: "";
@@ -3760,14 +3781,15 @@ transform: rotate(0deg);
 
 
 
-.cell:has(> details.code-fold.fold-group-middle),
+.cell:has(> details.code-fold.fold-group-first) {
+margin-bottom: 0 !important;
+}
+.cell:has(> details.code-fold.fold-group-middle) {
+margin-top: 0 !important;
+margin-bottom: 0 !important;
+}
 .cell:has(> details.code-fold.fold-group-last) {
 margin-top: 0 !important;
-}
-
-details.code-fold.fold-group-middle,
-details.code-fold.fold-group-last {
-margin-top: -0.4rem;
 }
 details.code-fold.fold-group-middle > summary,
 details.code-fold.fold-group-last > summary {
@@ -3837,6 +3859,90 @@ body.code-folded .code-fold-toggle .fold-icon-collapse { opacity: 0; transform: 
 body.code-folded .code-fold-toggle .fold-icon-expand { opacity: 1; transform: rotate(0deg); }
 @media (max-width: 767.98px) {
 .code-fold-toggle { display: none; }
+}
+
+.cell-output-empty,
+.cell:has(> .cell-output-empty:only-child) {
+display: none !important;
+}
+
+
+.toc-toggle[data-shortcut]::after,
+.theme-toggle[data-shortcut]::after,
+.code-fold-toggle[data-shortcut]::after {
+content: attr(aria-label) " · " attr(data-shortcut);
+position: absolute;
+top: calc(100% + 0.5rem);
+left: 50%;
+transform: translate(-50%, -4px);
+white-space: nowrap;
+padding: 0.3rem 0.55rem;
+font-family: "Geist Mono", ui-monospace, monospace;
+font-size: 0.65rem;
+font-weight: 500;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+color: var(--c-text-bright);
+background: var(--c-surface);
+border: 1px solid var(--c-border-soft);
+border-radius: 0.35rem;
+box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.45);
+opacity: 0;
+pointer-events: none;
+z-index: 70;
+transition:
+opacity 0.18s ease,
+transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.toc-toggle[data-shortcut]:hover::after,
+.toc-toggle[data-shortcut]:focus-visible::after,
+.theme-toggle[data-shortcut]:hover::after,
+.theme-toggle[data-shortcut]:focus-visible::after,
+.code-fold-toggle[data-shortcut]:hover::after,
+.code-fold-toggle[data-shortcut]:focus-visible::after {
+opacity: 1;
+transform: translate(-50%, 0);
+}
+
+
+body.code-folded details.code-fold > summary {
+height: 0;
+padding-top: 0;
+padding-bottom: 0;
+margin-top: 0;
+margin-bottom: 0;
+border-top-width: 0;
+border-bottom-width: 0;
+opacity: 0;
+pointer-events: none;
+}
+
+.cell:has(> details.code-fold) {
+overflow: hidden;
+transition:
+height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+margin-top 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+margin-bottom 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+opacity 0.22s ease;
+}
+body.code-folded .cell:has(> details.code-fold):not(:has(.cell-output, .cell-output-display, .cell-output-stdout, .cell-output-stderr)) {
+height: 0;
+margin-top: 0;
+margin-bottom: 0;
+opacity: 0;
+}
+
+.cell:has(> details.code-fold) > .cell-output,
+.cell:has(> details.code-fold) > .cell-output-display,
+.cell:has(> details.code-fold) > .cell-output-stdout,
+.cell:has(> details.code-fold) > .cell-output-stderr {
+transition: margin-top 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+body.code-folded .cell:has(> details.code-fold) > .cell-output,
+body.code-folded .cell:has(> details.code-fold) > .cell-output-display,
+body.code-folded .cell:has(> details.code-fold) > .cell-output-stdout,
+body.code-folded .cell:has(> details.code-fold) > .cell-output-stderr {
+margin-top: 0;
 }
 
 figure, figure.figure { margin: 2.5em 0; }
@@ -3933,6 +4039,29 @@ table.dataframe {
 font-size: 0.8125rem;
 margin: 0.5em 0;
 }
+
+.cell-output iframe,
+.cell-output-display iframe,
+.cell-output-stdout iframe {
+display: block;
+width: 100% !important;
+min-height: 520px;
+border: none;
+border-radius: 0.5rem;
+background: #ffffff; 
+margin: 0.5em 0;
+}
+
+.cell-output:has(iframe),
+.cell-output-display:has(iframe) {
+overflow: visible;
+padding: 0;
+background: transparent;
+border: none;
+}
+
+.cell-output:has(iframe)::after,
+.cell-output-display:has(iframe)::after { display: none; }
 
 .cell-output .js-plotly-plot,
 .cell-output .plotly-graph-div,
@@ -5119,6 +5248,11 @@ The interface your user talks to.
         if (s) s.removeAttribute("data-fold-count");
       });
 
+      // In global-folded mode, every summary collapses uniformly via
+      // CSS — skip per-group fusion (which would display:none the
+      // middle/last summaries and kill their animation).
+      if (document.body.classList.contains("code-folded")) return;
+
       // Walk in document order, building groups of consecutive .fold-closed
       var groups = [];
       var current = null;
@@ -5177,14 +5311,14 @@ The interface your user talks to.
     document.body.appendChild(foldBtn);
 
     function applyFold(folded) {
-      document.body.classList.toggle("code-folded", folded);
-      document.querySelectorAll("details.code-fold").forEach(function (d) {
-        d.classList.toggle("fold-closed", folded);
-      });
       foldBtn.setAttribute(
         "aria-label",
         folded ? "Expand all code blocks" : "Collapse all code blocks"
       );
+      document.body.classList.toggle("code-folded", folded);
+      document.querySelectorAll("details.code-fold").forEach(function (d) {
+        d.classList.toggle("fold-closed", folded);
+      });
       if (typeof recomputeFoldGroups === "function") recomputeFoldGroups();
     }
 
@@ -5197,6 +5331,7 @@ The interface your user talks to.
       applyFold(folded);
       try { localStorage.setItem(FOLD_KEY, folded ? "1" : "0"); } catch (e) {}
     });
+    foldBtn.setAttribute("data-shortcut", "C");
 
     // ─── Theme toggle button ─────────────────────────────────
     var THEME_KEY = "dsestu-theme";
@@ -5239,6 +5374,7 @@ The interface your user talks to.
       }
       try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
     });
+    themeBtn.setAttribute("data-shortcut", "D");
 
     var toc = document.querySelector("nav[role='doc-toc'], #TOC");
 
@@ -5274,6 +5410,59 @@ The interface your user talks to.
       var hidden = !document.body.classList.contains("toc-hidden");
       applyHidden(hidden);
       try { localStorage.setItem(STORAGE_KEY, hidden ? "1" : "0"); } catch (e) {}
+    });
+    btn.setAttribute("data-shortcut", "Tab");
+    var tocBtn = btn;
+
+    // ─── Empty cell-output sweep ─────────────────────────────
+    // Cells whose output rendered to nothing (no text, no media)
+    // get a marker class so CSS can hide them and their wrapper.
+    function isVisuallyEmpty(el) {
+      if (!el) return false;
+      if ((el.textContent || "").trim()) return false;
+      if (el.querySelector(
+        "img, svg, canvas, iframe, video, audio, table, " +
+        ".js-plotly-plot, .plotly-graph-div, .plot-container, " +
+        ".dataTables_wrapper, picture, embed, object"
+      )) return false;
+      return true;
+    }
+    function sweepEmptyOutputs() {
+      document.querySelectorAll(
+        ".cell-output, .cell-output-display, .cell-output-stdout, .cell-output-stderr"
+      ).forEach(function (el) {
+        el.classList.toggle("cell-output-empty", isVisuallyEmpty(el));
+      });
+    }
+    sweepEmptyOutputs();
+    // Run again later in case async renderers (Plotly, dtale, etc.)
+    // populate outputs after first paint.
+    setTimeout(sweepEmptyOutputs, 400);
+    setTimeout(sweepEmptyOutputs, 1500);
+
+    // ─── Keyboard shortcuts ──────────────────────────────────
+    // C = toggle code-fold mode, D = toggle dark/light theme,
+    // Tab = toggle TOC. Ignored while typing in a form field.
+    document.addEventListener("keydown", function (e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      var t = e.target;
+      if (t && (
+        t.tagName === "INPUT" ||
+        t.tagName === "TEXTAREA" ||
+        t.tagName === "SELECT" ||
+        t.isContentEditable
+      )) return;
+      var k = e.key;
+      if (k === "c" || k === "C") {
+        e.preventDefault();
+        foldBtn.click();
+      } else if (k === "d" || k === "D") {
+        e.preventDefault();
+        themeBtn.click();
+      } else if (k === "Tab") {
+        e.preventDefault();
+        tocBtn.click();
+      }
     });
 
     // ─── Plotly: make plots fill their container width ───────

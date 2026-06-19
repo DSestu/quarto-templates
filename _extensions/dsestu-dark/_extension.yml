@@ -167,6 +167,11 @@ contributes:
                     if (s) s.removeAttribute("data-fold-count");
                   });
 
+                  // In global-folded mode, every summary collapses uniformly via
+                  // CSS — skip per-group fusion (which would display:none the
+                  // middle/last summaries and kill their animation).
+                  if (document.body.classList.contains("code-folded")) return;
+
                   // Walk in document order, building groups of consecutive .fold-closed
                   var groups = [];
                   var current = null;
@@ -225,14 +230,14 @@ contributes:
                 document.body.appendChild(foldBtn);
 
                 function applyFold(folded) {
-                  document.body.classList.toggle("code-folded", folded);
-                  document.querySelectorAll("details.code-fold").forEach(function (d) {
-                    d.classList.toggle("fold-closed", folded);
-                  });
                   foldBtn.setAttribute(
                     "aria-label",
                     folded ? "Expand all code blocks" : "Collapse all code blocks"
                   );
+                  document.body.classList.toggle("code-folded", folded);
+                  document.querySelectorAll("details.code-fold").forEach(function (d) {
+                    d.classList.toggle("fold-closed", folded);
+                  });
                   if (typeof recomputeFoldGroups === "function") recomputeFoldGroups();
                 }
 
@@ -245,6 +250,7 @@ contributes:
                   applyFold(folded);
                   try { localStorage.setItem(FOLD_KEY, folded ? "1" : "0"); } catch (e) {}
                 });
+                foldBtn.setAttribute("data-shortcut", "C");
 
                 // ─── Theme toggle button ─────────────────────────────────
                 var THEME_KEY = "dsestu-theme";
@@ -287,6 +293,7 @@ contributes:
                   }
                   try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
                 });
+                themeBtn.setAttribute("data-shortcut", "D");
 
                 var toc = document.querySelector("nav[role='doc-toc'], #TOC");
 
@@ -322,6 +329,59 @@ contributes:
                   var hidden = !document.body.classList.contains("toc-hidden");
                   applyHidden(hidden);
                   try { localStorage.setItem(STORAGE_KEY, hidden ? "1" : "0"); } catch (e) {}
+                });
+                btn.setAttribute("data-shortcut", "Tab");
+                var tocBtn = btn;
+
+                // ─── Empty cell-output sweep ─────────────────────────────
+                // Cells whose output rendered to nothing (no text, no media)
+                // get a marker class so CSS can hide them and their wrapper.
+                function isVisuallyEmpty(el) {
+                  if (!el) return false;
+                  if ((el.textContent || "").trim()) return false;
+                  if (el.querySelector(
+                    "img, svg, canvas, iframe, video, audio, table, " +
+                    ".js-plotly-plot, .plotly-graph-div, .plot-container, " +
+                    ".dataTables_wrapper, picture, embed, object"
+                  )) return false;
+                  return true;
+                }
+                function sweepEmptyOutputs() {
+                  document.querySelectorAll(
+                    ".cell-output, .cell-output-display, .cell-output-stdout, .cell-output-stderr"
+                  ).forEach(function (el) {
+                    el.classList.toggle("cell-output-empty", isVisuallyEmpty(el));
+                  });
+                }
+                sweepEmptyOutputs();
+                // Run again later in case async renderers (Plotly, dtale, etc.)
+                // populate outputs after first paint.
+                setTimeout(sweepEmptyOutputs, 400);
+                setTimeout(sweepEmptyOutputs, 1500);
+
+                // ─── Keyboard shortcuts ──────────────────────────────────
+                // C = toggle code-fold mode, D = toggle dark/light theme,
+                // Tab = toggle TOC. Ignored while typing in a form field.
+                document.addEventListener("keydown", function (e) {
+                  if (e.ctrlKey || e.metaKey || e.altKey) return;
+                  var t = e.target;
+                  if (t && (
+                    t.tagName === "INPUT" ||
+                    t.tagName === "TEXTAREA" ||
+                    t.tagName === "SELECT" ||
+                    t.isContentEditable
+                  )) return;
+                  var k = e.key;
+                  if (k === "c" || k === "C") {
+                    e.preventDefault();
+                    foldBtn.click();
+                  } else if (k === "d" || k === "D") {
+                    e.preventDefault();
+                    themeBtn.click();
+                  } else if (k === "Tab") {
+                    e.preventDefault();
+                    tocBtn.click();
+                  }
                 });
 
                 // ─── Plotly: make plots fill their container width ───────
