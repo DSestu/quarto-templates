@@ -163,9 +163,9 @@ h1, h2, h3 {
 }
 
 /* Animated underline under headings — sits below text, drifts independently.
-   The gradient tiles horizontally (transparent ends join seamlessly) and the
-   animation shifts the position by exactly one tile width, so the cycle wraps
-   without any visible jump. Colour follows each heading's --heading-c. */
+   Two peaks per tile spaced exactly one element-width apart, so as one peak
+   exits left another enters from the right: continuous flowing motion with no
+   dead spots. Valleys stay at 25% intensity so the line never disappears. */
 h1::after, h2::after, h3::after, h4::after, h5::after, h6::after {
   content: "";
   position: absolute;
@@ -175,16 +175,16 @@ h1::after, h2::after, h3::after, h4::after, h5::after, h6::after {
   height: 1px;
   background-image: linear-gradient(
     90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--heading-c, var(--c-accent)) 40%, transparent) 25%,
-    var(--heading-c, var(--c-accent)) 50%,
-    color-mix(in srgb, var(--heading-c, var(--c-accent)) 40%, transparent) 75%,
-    transparent 100%
+    color-mix(in srgb, var(--heading-c, var(--c-accent)) 25%, transparent) 0%,
+    var(--heading-c, var(--c-accent)) 25%,
+    color-mix(in srgb, var(--heading-c, var(--c-accent)) 25%, transparent) 50%,
+    var(--heading-c, var(--c-accent)) 75%,
+    color-mix(in srgb, var(--heading-c, var(--c-accent)) 25%, transparent) 100%
   );
-  background-size: 260% 100%;
-  background-repeat: repeat;
+  background-size: 200% 100%;
+  background-repeat: repeat-x;
   background-position: 0% 50%;
-  animation: heading-underline 18s linear infinite;
+  animation: heading-underline 12s linear infinite;
   animation-delay: var(--anim-delay-3, 0s);
   pointer-events: none;
 }
@@ -198,7 +198,7 @@ h6::after { opacity: 0.18; }
 
 @keyframes heading-underline {
   from { background-position:    0% 50%; }
-  to   { background-position: -260% 50%; }
+  to   { background-position: -200% 50%; }
 }
 
 h3 {
@@ -1713,9 +1713,25 @@ body.code-folded details.code-fold > summary {
   pointer-events: none;
 }
 
-/* Cells that hold only a code-fold (no output) collapse their own height to 0
-   alongside the summary/content animation, so the collapse reaches true zero
-   smoothly — no leftover gap, no final display:none jump. */
+/* In global folded mode, the entire code-fold details collapses to height 0.
+   This belts-and-braces the per-summary/per-content rules above — whatever
+   intrinsic spacing the element might carry (line-height, browser-default
+   summary box, Quarto wrappers) is clipped flat. */
+details.code-fold {
+  overflow: hidden;
+  transition:
+    height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    margin-top 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    margin-bottom 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+body.code-folded details.code-fold {
+  height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Cells that hold only a code-fold (no output) also collapse their own height
+   to 0 so the cell margins disappear with the code. */
 .cell:has(> details.code-fold) {
   overflow: hidden;
   transition:
@@ -1729,6 +1745,22 @@ body.code-folded .cell:has(> details.code-fold):not(:has(.cell-output, .cell-out
   margin-top: 0;
   margin-bottom: 0;
   opacity: 0;
+}
+
+/* When code is folded inside a cell that also has output, the cell-output's
+   own 0.5em top margin is the last bit of "space where code used to live".
+   Animate it away so the output sits flush with the cell top. */
+.cell:has(> details.code-fold) > .cell-output,
+.cell:has(> details.code-fold) > .cell-output-display,
+.cell:has(> details.code-fold) > .cell-output-stdout,
+.cell:has(> details.code-fold) > .cell-output-stderr {
+  transition: margin-top 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+body.code-folded .cell:has(> details.code-fold) > .cell-output,
+body.code-folded .cell:has(> details.code-fold) > .cell-output-display,
+body.code-folded .cell:has(> details.code-fold) > .cell-output-stdout,
+body.code-folded .cell:has(> details.code-fold) > .cell-output-stderr {
+  margin-top: 0;
 }
 
 /* ─── Figures ────────────────────────────────────────────────────────────── */
