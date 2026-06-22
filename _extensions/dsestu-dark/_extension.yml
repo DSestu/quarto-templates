@@ -241,8 +241,11 @@ contributes:
                   if (typeof recomputeFoldGroups === "function") recomputeFoldGroups();
                 }
 
-                var foldedInit = false;
-                try { foldedInit = localStorage.getItem(FOLD_KEY) === "1"; } catch (e) {}
+                var foldedInit = true;
+                try {
+                  var stored = localStorage.getItem(FOLD_KEY);
+                  if (stored === "0") foldedInit = false;
+                } catch (e) {}
                 applyFold(foldedInit);
 
                 foldBtn.addEventListener("click", function () {
@@ -298,7 +301,9 @@ contributes:
                 var toc = document.querySelector("nav[role='doc-toc'], #TOC");
 
                 // ─── Toggle button ───────────────────────────────────────
-                var STORAGE_KEY = "dsestu-toc-hidden";
+                // Storage key bumped (v2) to drop stale "hidden" preferences
+                // from earlier visits — the TOC is visible by default now.
+                var STORAGE_KEY = "dsestu-toc-hidden-v2";
                 var btn = document.createElement("button");
                 btn.className = "toc-toggle";
                 btn.type = "button";
@@ -323,7 +328,13 @@ contributes:
                   if (toc) toc.setAttribute("aria-hidden", String(hidden));
                 }
 
-                try { applyHidden(localStorage.getItem(STORAGE_KEY) === "1"); } catch (e) {}
+                // Default: TOC visible. Only honour an explicit "1" — anything
+                // else (null, "0", malformed) keeps the TOC on screen.
+                var tocHiddenInit = false;
+                try {
+                  if (localStorage.getItem(STORAGE_KEY) === "1") tocHiddenInit = true;
+                } catch (e) {}
+                applyHidden(tocHiddenInit);
 
                 btn.addEventListener("click", function () {
                   var hidden = !document.body.classList.contains("toc-hidden");

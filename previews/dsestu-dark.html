@@ -2643,7 +2643,6 @@ h4:hover .anchorjs-link { opacity: 1; }
 p {
 margin: 0 0 1.25em 0;
 color: var(--c-text);
-max-width: 78ch;
 }
 p.lead {
 font-family: "Geist", system-ui, sans-serif;
@@ -2653,7 +2652,6 @@ line-height: 1.5;
 color: var(--c-text-bright);
 margin-bottom: 2rem;
 letter-spacing: -0.005em;
-max-width: 60ch;
 }
 strong, b {
 font-weight: 600;
@@ -3988,7 +3986,6 @@ ul, ol {
 padding-left: 1.5em;
 margin: 0 0 1.25em 0;
 color: var(--c-text);
-max-width: 78ch;
 }
 li { margin: 0.375em 0; }
 li::marker { color: var(--c-text-faint); }
@@ -4086,6 +4083,36 @@ max-width: 100%;
 .cell-output .plot-container,
 .cell-output-display .plot-container {
 width: 100% !important;
+}
+
+.cell-output img,
+.cell-output-display img {
+display: block;
+width: 100% !important;
+max-width: 100%;
+height: auto !important;
+margin-left: auto;
+margin-right: auto;
+}
+.cell-output figure,
+.cell-output figure.figure,
+.cell-output-display figure,
+.cell-output-display figure.figure,
+.cell-output > div:has(img),
+.cell-output-display > div:has(img) {
+display: block;
+width: 100%;
+max-width: 100%;
+margin-left: auto;
+margin-right: auto;
+text-align: center;
+}
+.cell-output figure > p,
+.cell-output-display figure > p,
+.cell-output > p:has(> img),
+.cell-output-display > p:has(> img) {
+margin: 0;
+text-align: center;
 }
 
 .plotly-fs-wrap {
@@ -5335,8 +5362,11 @@ The interface your user talks to.
       if (typeof recomputeFoldGroups === "function") recomputeFoldGroups();
     }
 
-    var foldedInit = false;
-    try { foldedInit = localStorage.getItem(FOLD_KEY) === "1"; } catch (e) {}
+    var foldedInit = true;
+    try {
+      var stored = localStorage.getItem(FOLD_KEY);
+      if (stored === "0") foldedInit = false;
+    } catch (e) {}
     applyFold(foldedInit);
 
     foldBtn.addEventListener("click", function () {
@@ -5392,7 +5422,9 @@ The interface your user talks to.
     var toc = document.querySelector("nav[role='doc-toc'], #TOC");
 
     // ─── Toggle button ───────────────────────────────────────
-    var STORAGE_KEY = "dsestu-toc-hidden";
+    // Storage key bumped (v2) to drop stale "hidden" preferences
+    // from earlier visits — the TOC is visible by default now.
+    var STORAGE_KEY = "dsestu-toc-hidden-v2";
     var btn = document.createElement("button");
     btn.className = "toc-toggle";
     btn.type = "button";
@@ -5417,7 +5449,13 @@ The interface your user talks to.
       if (toc) toc.setAttribute("aria-hidden", String(hidden));
     }
 
-    try { applyHidden(localStorage.getItem(STORAGE_KEY) === "1"); } catch (e) {}
+    // Default: TOC visible. Only honour an explicit "1" — anything
+    // else (null, "0", malformed) keeps the TOC on screen.
+    var tocHiddenInit = false;
+    try {
+      if (localStorage.getItem(STORAGE_KEY) === "1") tocHiddenInit = true;
+    } catch (e) {}
+    applyHidden(tocHiddenInit);
 
     btn.addEventListener("click", function () {
       var hidden = !document.body.classList.contains("toc-hidden");

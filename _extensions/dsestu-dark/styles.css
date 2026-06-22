@@ -242,7 +242,6 @@ h4:hover .anchorjs-link { opacity: 1; }
 p {
   margin: 0 0 1.25em 0;
   color: var(--c-text);
-  max-width: 78ch;
 }
 
 p.lead {
@@ -253,7 +252,6 @@ p.lead {
   color: var(--c-text-bright);
   margin-bottom: 2rem;
   letter-spacing: -0.005em;
-  max-width: 60ch;
 }
 
 strong, b {
@@ -1801,7 +1799,6 @@ ul, ol {
   padding-left: 1.5em;
   margin: 0 0 1.25em 0;
   color: var(--c-text);
-  max-width: 78ch;
 }
 
 li { margin: 0.375em 0; }
@@ -1917,6 +1914,44 @@ table.dataframe {
 .cell-output .plot-container,
 .cell-output-display .plot-container {
   width: 100% !important;
+}
+
+/* Static image outputs (Plotly PNG, matplotlib, etc.) — render at the cell's
+   full width while preserving aspect ratio, and centre them. Jupyter wraps
+   these as .cell-output-display > div > figure.figure > p > img, and Bootstrap's
+   .figure { display: inline-block } shrinks the wrapper to the image's intrinsic
+   width, which reads as "minimized" inside a wider content column. We override
+   every wrapper level so the image fills the column. */
+.cell-output img,
+.cell-output-display img {
+  display: block;
+  width: 100% !important;
+  max-width: 100%;
+  height: auto !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cell-output figure,
+.cell-output figure.figure,
+.cell-output-display figure,
+.cell-output-display figure.figure,
+.cell-output > div:has(img),
+.cell-output-display > div:has(img) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.cell-output figure > p,
+.cell-output-display figure > p,
+.cell-output > p:has(> img),
+.cell-output-display > p:has(> img) {
+  margin: 0;
+  text-align: center;
 }
 
 /* ─── Plotly fullscreen wrap ─────────────────────────────────────────────── */
