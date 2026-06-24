@@ -1086,12 +1086,13 @@ body .page-columns {
   scrollbar-color: var(--c-border-strong) transparent;
 }
 
-/* TOC container — width matches --toc-col-width so it never overflows the
-   grid column or the viewport. */
+/* TOC container — fills its parent (the sidebar wrapper). The wrapper width
+   is what controls the column; making the nav itself 100% means the peek
+   state (where --toc-col-width: 0) doesn't collapse the labels to nothing. */
 nav#TOC,
 nav[role="doc-toc"] {
   position: relative;
-  width: var(--toc-col-width);
+  width: 100%;
   max-width: 100%;
   font-family: "Geist", system-ui, sans-serif;
   font-size: 0.8125rem;
@@ -1353,8 +1354,8 @@ body.toc-hidden .toc-peek-zone {
 }
 
 /* Peek state — TOC slides in as a floating overlay; body content unmoved.
-   Width = TOC column + horizontal padding so the inner TOC has the same
-   wrapping behaviour as in the docked sidebar (no extra squeeze). */
+   Width is a literal value (NOT --toc-col-width, which is 0 while
+   toc-hidden) so the inner TOC has the same room as in the docked sidebar. */
 body.toc-hidden.toc-peek .sidebar.toc-left,
 body.toc-hidden.toc-peek #quarto-sidebar {
   opacity: 1 !important;
@@ -1362,7 +1363,7 @@ body.toc-hidden.toc-peek #quarto-sidebar {
   position: fixed !important;
   top: 1rem !important;
   left: 1.75rem !important;            /* match outer page padding */
-  width: calc(var(--toc-col-width) + 1.5rem) !important;
+  width: 17.5rem !important;           /* 16rem TOC + 1.5rem internal padding */
   max-height: calc(100vh - 2rem);
   z-index: 40;
   background: var(--c-bg);
