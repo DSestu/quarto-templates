@@ -20,11 +20,10 @@ contributes:
       smooth-scroll: true
       anchor-sections: true
 
-      # Single-file MathJax v3 bundle from CDN — avoids the broken relative
-      # /extensions/MathMenu.js sub-module loading triggered by self-contained.
-      html-math-method:
-        method: mathjax
-        url: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"
+      # KaTeX instead of MathJax: lightweight, self-contained, and avoids the
+      # /extensions/MathMenu.js 404 that Pandoc's MathJax v2 fallback triggers
+      # under `embed-resources: true`.
+      html-math-method: katex
 
       code-tools: false
       code-copy: hover

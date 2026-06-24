@@ -11,6 +11,12 @@ html {
   scroll-behavior: smooth;
   text-size-adjust: 100%;
   background: var(--c-bg);
+  /* Hard guarantee: the document can never be wider than the viewport.
+     `overflow-x: clip` hides overflow without creating a scrolling context,
+     so position:sticky on the TOC sidebar keeps working (overflow-x: hidden
+     would create a scroll container and break sticky). */
+  overflow-x: clip;
+  max-width: 100vw;
 }
 
 body {
@@ -22,6 +28,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  overflow-x: clip;
+  max-width: 100vw;
 }
 
 ::selection {
@@ -37,31 +45,47 @@ body .page-columns {
     [screen-start screen-start-inset page-start page-start-inset body-start-outset]
       minmax(220px, 22vw)
     [body-start body-content-start]
-      1fr
+      minmax(0, 1fr)
     [body-content-end body-end body-end-outset page-end-inset page-end screen-end-inset screen-end] !important;
   column-gap: 3rem;
   padding: 0 1.75rem !important;
   max-width: 100%;
 }
 
-/* Body content column — equal L/R padding so it stays centered when TOC hides */
+/* Body content column — equal L/R padding so it stays centered when TOC hides.
+   min-width: 0 lets the column shrink below children's min-content (long
+   <pre>/<table> handle their own internal overflow via overflow-x: auto). */
 body main.content,
 body #quarto-document-content,
 body .quarto-document-content {
   grid-column: body-content-start / screen-end !important;
   max-width: none;
+  min-width: 0;
   padding-left: 3rem;
   padding-right: 3rem;
   transition: padding-left 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Wide cell outputs (tables, dataframes, iframes) must not push their
+   container wider than the grid column. */
+.cell,
+.cell-output,
+.cell-output-display,
+.cell-output-stdout,
+.cell-output-stderr,
+table {
+  min-width: 0;
+  max-width: 100%;
+}
+table { overflow-x: auto; display: block; }
 
 /* TOC sidebar column */
 body #quarto-sidebar,
 body .sidebar.sidebar-navigation,
 body .sidebar.toc-left {
   grid-column: screen-start / body-start !important;
-  padding-right: 1.5rem;
-  padding-left: 1rem;
+  padding-right: 0;
+  padding-left: 0.25rem;
 }
 
 /* Hide the right margin column entirely */
@@ -338,6 +362,8 @@ pre {
   font-size: 0.875em;
   line-height: 1.6;
   overflow-x: auto;
+  min-width: 0;
+  max-width: 100%;
   margin: 1.5em 0;
   font-family: "Geist Mono", ui-monospace, monospace;
   position: relative;
@@ -1029,40 +1055,44 @@ div.callout.callout-style-simple,
   --toc-button-zone: 3.5rem;
 }
 
-/* Grid column reads from --toc-col-width (toggle button collapses it to 0) */
+/* Grid column reads from --toc-col-width (toggle button collapses it to 0).
+   The body column uses minmax(0, 1fr) so it can shrink below its min-content
+   width; wide children (pre, table, iframe) handle their own internal scroll. */
 body .page-columns.page-layout-article,
 body .page-columns {
   grid-template-columns:
     [screen-start screen-start-inset page-start page-start-inset body-start-outset]
       var(--toc-col-width)
     [body-start body-content-start]
-      1fr
+      minmax(0, 1fr)
     [body-content-end body-end body-end-outset page-end-inset page-end screen-end-inset screen-end] !important;
 }
 
-/* Sidebar wrapper — sticky, button zone */
+/* Sidebar wrapper — sticky to viewport, with its own independent vertical
+   scroll if the TOC is taller than the visible window. */
 #quarto-sidebar,
 .sidebar.sidebar-navigation,
 .sidebar.toc-left {
   position: sticky;
   top: 1.5rem;
-  align-self: flex-start;
+  align-self: start;
+  height: calc(100vh - 3rem);
   max-height: calc(100vh - 3rem);
   padding-top: var(--toc-button-zone);
-  padding-right: 1.25rem;
+  padding-right: 0.5rem;
   overflow-y: auto !important;
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--c-border-strong) transparent;
 }
 
-/* TOC container — fixed inner width so labels don't reflow during the grid
-   column animation. The sidebar's overflow-x: hidden clips it when narrower. */
+/* TOC container — width matches --toc-col-width so it never overflows the
+   grid column or the viewport. */
 nav#TOC,
 nav[role="doc-toc"] {
   position: relative;
-  width: 16rem;
-  min-width: 16rem;
+  width: var(--toc-col-width);
+  max-width: 100%;
   font-family: "Geist", system-ui, sans-serif;
   font-size: 0.8125rem;
   line-height: 1.4;
@@ -1098,13 +1128,14 @@ nav[role="doc-toc"] li {
   list-style: none;
 }
 
-/* Links — flex: dot + text label */
+/* Links — block layout with the dot absolute-positioned in a fixed left rail,
+   so the label is a normal block whose wrapped lines all align under the
+   first line of text (no flex baseline games, no min-width quirks). */
 nav#TOC a,
 nav[role="doc-toc"] a {
-  display: flex;
-  align-items: baseline;
-  gap: 0.625rem;
-  padding: 0.3em 0;
+  display: block;
+  position: relative;
+  padding: 0.3em 0.4rem 0.3em 1.125rem; /* left = dot rail; right = minimal breathing room */
   color: var(--c-text-muted);
   text-decoration: none;
   font-size: 0.875rem;
@@ -1122,15 +1153,19 @@ nav[role="doc-toc"] ul ul a {
   color: var(--c-text-faint);
 }
 
-/* Dot — small inline marker, fixed slot */
+/* Dot — absolute-positioned in the link's left rail. Vertically pinned to the
+   first line of text via top + line-height arithmetic so it sits next to the
+   first line even when the label wraps. */
 nav#TOC a .toc-dot,
 nav[role="doc-toc"] a .toc-dot {
-  flex: 0 0 var(--toc-dot-size-active);
+  position: absolute;
+  left: 0;
+  top: 0.3em;
+  width: var(--toc-dot-size-active);
+  height: 1.4em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  top: -1px;
 }
 
 nav#TOC a .toc-dot::before,
@@ -1155,13 +1190,16 @@ nav[role="doc-toc"] ul ul a .toc-dot::before {
   background: var(--c-border-strong);
 }
 
-/* Text label */
+/* Text label — plain block within the link. Wrapped lines align under the
+   first line of text because the link's left-padding builds the rail.
+   Allow long unbreakable tokens (URLs, snake_case) to break mid-word. */
 nav#TOC a .toc-label,
 nav[role="doc-toc"] a .toc-label {
-  flex: 1 1 auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: block;
   white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 /* Link hover */
@@ -1181,14 +1219,24 @@ nav[role="doc-toc"] ul ul {
   padding-left: 0;
 }
 
-nav#TOC ul ul a .toc-label,
-nav[role="doc-toc"] ul ul a .toc-label {
-  padding-left: 0.875rem;
+/* Nested entries — extend the link's left padding (which builds the dot rail
+   PLUS the indent) so wrapped lines still align under the first line of text. */
+nav#TOC ul ul a,
+nav[role="doc-toc"] ul ul a {
+  padding-left: 2rem;
+}
+nav#TOC ul ul a .toc-dot,
+nav[role="doc-toc"] ul ul a .toc-dot {
+  left: 0.875rem;
 }
 
-nav#TOC ul ul ul a .toc-label,
-nav[role="doc-toc"] ul ul ul a .toc-label {
-  padding-left: 1.75rem;
+nav#TOC ul ul ul a,
+nav[role="doc-toc"] ul ul ul a {
+  padding-left: 2.875rem;
+}
+nav#TOC ul ul ul a .toc-dot,
+nav[role="doc-toc"] ul ul ul a .toc-dot {
+  left: 1.75rem;
 }
 
 /* Active state — uses Quarto's native .active class */
@@ -1304,7 +1352,9 @@ body.toc-hidden .toc-peek-zone {
   pointer-events: auto;
 }
 
-/* Peek state — TOC slides in as a floating overlay; body content unmoved */
+/* Peek state — TOC slides in as a floating overlay; body content unmoved.
+   Width = TOC column + horizontal padding so the inner TOC has the same
+   wrapping behaviour as in the docked sidebar (no extra squeeze). */
 body.toc-hidden.toc-peek .sidebar.toc-left,
 body.toc-hidden.toc-peek #quarto-sidebar {
   opacity: 1 !important;
@@ -1312,7 +1362,7 @@ body.toc-hidden.toc-peek #quarto-sidebar {
   position: fixed !important;
   top: 1rem !important;
   left: 1.75rem !important;            /* match outer page padding */
-  width: 16rem !important;
+  width: calc(var(--toc-col-width) + 1.5rem) !important;
   max-height: calc(100vh - 2rem);
   z-index: 40;
   background: var(--c-bg);
@@ -1320,7 +1370,7 @@ body.toc-hidden.toc-peek #quarto-sidebar {
   border-radius: 0.6rem;
   box-shadow: 0 10px 30px -6px rgba(0, 0, 0, 0.45),
               0 0 0 1px color-mix(in srgb, var(--c-accent) 12%, transparent);
-  padding: var(--toc-button-zone) 1rem 1rem 1rem;
+  padding: var(--toc-button-zone) 0.75rem 1rem 0.75rem;
   overflow-y: auto;
   transform: translateX(0) !important;
   transition:
@@ -2241,7 +2291,10 @@ body.has-fullscreen-plot { overflow: hidden; }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 
-@media (max-width: 991.98px) {
+/* Hide the TOC sidebar at any viewport narrower than ~1280px. Below that the
+   body column would get squeezed below a comfortable reading width, and
+   wrapped TOC labels would degrade to one-word-per-line. */
+@media (max-width: 1279.98px) {
   body { font-size: 16px; }
   body .page-columns.page-layout-article,
   body .page-columns {
