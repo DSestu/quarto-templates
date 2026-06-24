@@ -555,85 +555,6 @@ contributes:
                 btn.setAttribute("data-shortcut", "Tab");
                 var tocBtn = btn;
 
-                // ─── TOC entry hover preview ─────────────────────────────
-                // Hovering a TOC link spawns a tiny floating preview of the
-                // target section: we clone the section subtree into a sandbox
-                // panel and scale it down so the user gets a "looks like X"
-                // glance before clicking.
-                if (toc) {
-                  var previewEl = document.createElement("div");
-                  previewEl.className = "toc-preview";
-                  previewEl.setAttribute("aria-hidden", "true");
-                  var previewInner = document.createElement("div");
-                  previewInner.className = "toc-preview-inner";
-                  previewEl.appendChild(previewInner);
-                  document.body.appendChild(previewEl);
-
-                  var hoverTimer = null;
-                  var leaveTimer = null;
-                  var currentHash = null;
-
-                  function showPreview(link, hash) {
-                    if (!hash || hash.charAt(0) !== "#") return;
-                    if (currentHash === hash && previewEl.classList.contains("is-visible")) return;
-                    var target = document.getElementById(hash.slice(1));
-                    if (!target) return;
-                    // Target is the heading; the section containing it is the
-                    // wrapper we want to clone.
-                    var section = target.closest("section") || target;
-                    var clone = section.cloneNode(true);
-                    // Strip elements that don't render well at preview scale
-                    // or would re-trigger animations/audio.
-                    clone.querySelectorAll(
-                      "script, .toc-toggle, .theme-toggle, .code-fold-toggle, " +
-                      ".export-toggle, .anchorjs-link, button"
-                    ).forEach(function (n) { n.remove(); });
-                    // Inline videos / iframes get poster-only display
-                    clone.querySelectorAll("iframe, video, audio").forEach(function (n) {
-                      n.removeAttribute("src");
-                    });
-                    previewInner.innerHTML = "";
-                    previewInner.appendChild(clone);
-
-                    // Position the panel next to the TOC link
-                    var rect = link.getBoundingClientRect();
-                    var top = rect.top;
-                    var left = rect.right + 8;
-                    var maxTop = window.innerHeight - 240;
-                    if (top > maxTop) top = maxTop;
-                    if (top < 8) top = 8;
-                    previewEl.style.top = top + "px";
-                    previewEl.style.left = left + "px";
-                    previewEl.classList.add("is-visible");
-                    currentHash = hash;
-                  }
-
-                  function hidePreview() {
-                    previewEl.classList.remove("is-visible");
-                    currentHash = null;
-                  }
-
-                  toc.addEventListener("mouseover", function (e) {
-                    var link = e.target.closest("a[href^='#']");
-                    if (!link) return;
-                    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
-                    if (hoverTimer) clearTimeout(hoverTimer);
-                    hoverTimer = setTimeout(function () {
-                      showPreview(link, link.getAttribute("href"));
-                    }, 220);
-                  });
-                  toc.addEventListener("mouseout", function (e) {
-                    if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
-                    var link = e.target.closest("a[href^='#']");
-                    if (!link) return;
-                    // Delay hide so the user can move into the preview if
-                    // they want — but currently the preview is non-interactive.
-                    leaveTimer = setTimeout(hidePreview, 120);
-                  });
-                  // Hide on scroll (preview position would drift).
-                  window.addEventListener("scroll", hidePreview, { passive: true });
-                }
-
                 // ─── Section accordion ───────────────────────────────────
                 // Every h2/h3 section becomes click-collapsible. Quarto adds
                 // class="collapsed" to the heading when the source uses
@@ -725,9 +646,84 @@ contributes:
                 setTimeout(sweepEmptyOutputs, 400);
                 setTimeout(sweepEmptyOutputs, 1500);
 
+                // ─── Hover-tracked section + cursor-following tooltip ───
+                // A single delegated mouseover listener tracks the innermost
+                // accordion-wired section under the cursor. When the cursor is
+                // over the section's heading, a floating tooltip follows the
+                // pointer telling the user how to collapse/expand it.
+                var hoveredSection = null;
+                var hoveredHeading = null;
+
+                var sectionTip = document.createElement("div");
+                sectionTip.className = "section-tip";
+                sectionTip.setAttribute("aria-hidden", "true");
+                document.body.appendChild(sectionTip);
+
+                var lastTipText = "";
+                function refreshTipText() {
+                  if (!hoveredSection) return;
+                  var collapsed = hoveredSection.classList.contains("section-collapsed");
+                  var text = "Click or press F to " + (collapsed ? "expand" : "collapse");
+                  if (text !== lastTipText) {
+                    sectionTip.textContent = text;
+                    lastTipText = text;
+                  }
+                }
+                function positionTip(x, y) {
+                  var w = sectionTip.offsetWidth;
+                  var h = sectionTip.offsetHeight;
+                  var nx = x + 16;
+                  var ny = y + 18;
+                  if (nx + w + 8 > window.innerWidth) nx = x - w - 16;
+                  if (ny + h + 8 > window.innerHeight) ny = y - h - 16;
+                  sectionTip.style.left = nx + "px";
+                  sectionTip.style.top = ny + "px";
+                }
+                function showTip() {
+                  refreshTipText();
+                  sectionTip.classList.add("is-visible");
+                }
+                function hideTip() {
+                  sectionTip.classList.remove("is-visible");
+                }
+
+                document.addEventListener("mouseover", function (e) {
+                  if (!e.target || !e.target.closest) return;
+                  hoveredSection = e.target.closest(
+                    "section.level1, section.level2, section.level3"
+                  );
+                  if (hoveredSection &&
+                      !hoveredSection.querySelector(":scope > .section-toggle")) {
+                    hoveredSection = null;
+                  }
+                  hoveredHeading = e.target.closest(".section-toggle");
+                  if (hoveredHeading && hoveredSection) {
+                    showTip();
+                  } else {
+                    hideTip();
+                  }
+                });
+
+                document.addEventListener("mousemove", function (e) {
+                  if (!sectionTip.classList.contains("is-visible")) return;
+                  refreshTipText();
+                  positionTip(e.clientX, e.clientY);
+                });
+
+                document.addEventListener("mouseout", function (e) {
+                  if (!hoveredHeading) return;
+                  var related = e.relatedTarget;
+                  if (related && hoveredHeading.contains(related)) return;
+                  if (related && related.closest && related.closest(".section-toggle") === hoveredHeading) return;
+                  hideTip();
+                });
+
+                window.addEventListener("scroll", hideTip, { passive: true });
+
                 // ─── Keyboard shortcuts ──────────────────────────────────
                 // C = toggle code-fold mode, D = toggle dark/light theme,
-                // Tab = toggle TOC. Ignored while typing in a form field.
+                // Tab = toggle TOC, F = toggle the section under the cursor.
+                // Ignored while typing in a form field.
                 document.addEventListener("keydown", function (e) {
                   if (e.ctrlKey || e.metaKey || e.altKey) return;
                   var t = e.target;
@@ -747,6 +743,15 @@ contributes:
                   } else if (k === "Tab") {
                     e.preventDefault();
                     tocBtn.click();
+                  } else if (k === "f" || k === "F") {
+                    if (hoveredSection &&
+                        typeof setSectionState === "function") {
+                      e.preventDefault();
+                      setSectionState(
+                        hoveredSection,
+                        !hoveredSection.classList.contains("section-collapsed")
+                      );
+                    }
                   }
                 });
 

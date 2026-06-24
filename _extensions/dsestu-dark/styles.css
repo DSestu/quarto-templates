@@ -235,6 +235,31 @@ section.level3 > h3.section-toggle {
   user-select: none;
 }
 
+/* Floating hover tooltip — follows the cursor while the user is over a
+   collapsible heading. Position is set inline by JS on mousemove. */
+.section-tip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 0.3rem 0.6rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-soft);
+  border-radius: 0.3rem;
+  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.5);
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-text-bright);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 80;
+  transition: opacity 0.16s ease;
+}
+.section-tip.is-visible { opacity: 1; }
+
 /* Morphing chevron — two-stage animation.
    Expanded:  only the left half is drawn (a short dash ─).
    Collapsing: the right half slides OUT from behind the left, then both
@@ -1762,79 +1787,6 @@ details.code-fold.fold-group-first > summary::after {
 }
 
 /* ─── Code-fold toggle button ────────────────────────────────────────────── */
-
-/* ─── TOC hover preview ──────────────────────────────────────────────────── */
-
-/* Floating panel that shows a scaled-down clone of the hovered section. */
-.toc-preview {
-  position: fixed;
-  width: 260px;
-  height: 220px;
-  background: var(--c-bg);
-  border: 1px solid var(--c-border-soft);
-  border-radius: 0.5rem;
-  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5),
-              0 0 0 1px color-mix(in srgb, var(--c-accent) 10%, transparent);
-  overflow: hidden;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateX(-6px);
-  transition:
-    opacity 0.18s ease,
-    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 80;
-  isolation: isolate;
-}
-
-.toc-preview.is-visible {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-/* The clone is scaled down so the full visible window shows ~3x more content
-   than its actual size. Anchored to top-left so the section heading is
-   visible immediately. */
-.toc-preview-inner {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 780px;          /* 260 / 0.333 */
-  height: 660px;
-  transform: scale(0.333);
-  transform-origin: 0 0;
-  padding: 1.25rem;
-  color: var(--c-text);
-  background: var(--c-bg);
-  overflow: hidden;
-}
-
-/* Suppress per-block animations in the preview — they'd just chew CPU. */
-.toc-preview-inner *,
-.toc-preview-inner *::before,
-.toc-preview-inner *::after {
-  animation: none !important;
-  transition: none !important;
-}
-
-/* Fade-out the bottom of the preview so the cut-off feels intentional. */
-.toc-preview::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 60px;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    color-mix(in srgb, var(--c-bg) 92%, transparent) 100%
-  );
-  pointer-events: none;
-}
-
-@media (max-width: 1279.98px) {
-  .toc-preview { display: none; }
-}
 
 /* Single export button (with dropdown) — sits after the code-fold toggle. */
 .export-toggle {
