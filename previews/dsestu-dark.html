@@ -2565,6 +2565,56 @@ h6::after { opacity: 0.18; }
 from { background-position: 0% 50%; }
 to { background-position: -200% 50%; }
 }
+
+
+section.level1 > h1.section-toggle,
+section.level2 > h2.section-toggle,
+section.level3 > h3.section-toggle {
+cursor: pointer;
+user-select: none;
+}
+
+section.level1 > h1.section-toggle::before,
+section.level2 > h2.section-toggle::before,
+section.level3 > h3.section-toggle::before {
+content: "";
+display: inline-block;
+width: 0;
+height: 0;
+border-style: solid;
+border-width: 5px 0 5px 7px;
+border-color: transparent transparent transparent var(--heading-c, var(--c-accent));
+vertical-align: middle;
+margin-right: 0.55em;
+margin-top: -0.18em;
+transform: rotate(90deg);
+transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+opacity: 0.75;
+}
+section.level1.section-collapsed > h1.section-toggle::before,
+section.level2.section-collapsed > h2.section-toggle::before,
+section.level3.section-collapsed > h3.section-toggle::before {
+transform: rotate(0deg);
+}
+
+section.level1 > .section-body,
+section.level2 > .section-body,
+section.level3 > .section-body {
+overflow: hidden;
+height: auto;
+opacity: 1;
+transition:
+height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+opacity 0.22s ease,
+margin-top 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+section.level1.section-collapsed > .section-body,
+section.level2.section-collapsed > .section-body,
+section.level3.section-collapsed > .section-body {
+height: 0;
+opacity: 0;
+margin-top: 0;
+}
 h3 {
 font-size: 1.1875rem;
 font-weight: 550;
@@ -4397,6 +4447,11 @@ body .page-columns { grid-template-columns: 1fr !important; }
   <li><a href="#keyboard-shortcuts-and-abbreviations" id="toc-keyboard-shortcuts-and-abbreviations" class="nav-link" data-scroll-target="#keyboard-shortcuts-and-abbreviations">Keyboard shortcuts and abbreviations</a></li>
   <li><a href="#a-horizontal-rule" id="toc-a-horizontal-rule" class="nav-link" data-scroll-target="#a-horizontal-rule">A horizontal rule</a></li>
   <li><a href="#cell-outputs" id="toc-cell-outputs" class="nav-link" data-scroll-target="#cell-outputs">Cell outputs</a></li>
+  <li><a href="#section-accordion" id="toc-section-accordion" class="nav-link" data-scroll-target="#section-accordion">Section accordion</a>
+  <ul class="collapse">
+  <li><a href="#a-normally-expanded-subsection" id="toc-a-normally-expanded-subsection" class="nav-link" data-scroll-target="#a-normally-expanded-subsection">A normally-expanded subsection</a></li>
+  <li><a href="#long-content-collapses-cleanly" id="toc-long-content-collapses-cleanly" class="nav-link" data-scroll-target="#long-content-collapses-cleanly">Long content collapses cleanly</a></li>
+  </ul></li>
   <li><a href="#closing-notes" id="toc-closing-notes" class="nav-link" data-scroll-target="#closing-notes">Closing notes</a></li>
   </ul>
 </nav>
@@ -4733,6 +4788,20 @@ The interface your user talks to.
 2  Germany    2508         0.889</code></pre>
   </div>
 </div>
+</section>
+<section id="section-accordion" class="level2">
+<h2 class="anchored" data-anchor-id="section-accordion">Section accordion</h2>
+<p>Click any section heading to collapse or expand its content. Sections with the <code>{.collapsed}</code> attribute start collapsed by default.</p>
+<section id="a-normally-expanded-subsection" class="level3">
+<h3 class="anchored" data-anchor-id="a-normally-expanded-subsection">A normally-expanded subsection</h3>
+<p>This subsection is open at first load. Clicking the heading toggles it.</p>
+</section>
+<section id="long-content-collapses-cleanly" class="level3 collapsed">
+<h3 class="collapsed anchored" data-anchor-id="long-content-collapses-cleanly">Long content collapses cleanly</h3>
+<p>This subsection starts collapsed because the source has <code>### Heading {.collapsed}</code>. The chevron rotates and the body’s height animates to zero.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> example():</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">&quot;hidden until expanded&quot;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
 </section>
 <section id="closing-notes" class="level2">
 <h2 class="anchored" data-anchor-id="closing-notes">Closing notes</h2>
@@ -5437,6 +5506,63 @@ The interface your user talks to.
     });
     btn.setAttribute("data-shortcut", "Tab");
     var tocBtn = btn;
+
+    // ─── Section accordion ───────────────────────────────────
+    // Every h2/h3 section becomes click-collapsible. Quarto adds
+    // class="collapsed" to the heading when the source uses
+    // `## Title {.collapsed}` — those start collapsed.
+    function setupSectionAccordion() {
+      document.querySelectorAll(
+        "section.level1, section.level2, section.level3"
+      ).forEach(function (section) {
+        var heading = section.querySelector(":scope > h1, :scope > h2, :scope > h3");
+        if (!heading) return;
+        // Wrap everything after the heading in a .section-body div
+        // so we can animate its height to 0.
+        var body = section.querySelector(":scope > .section-body");
+        if (!body) {
+          body = document.createElement("div");
+          body.className = "section-body";
+          var node = heading.nextSibling;
+          while (node) {
+            var next = node.nextSibling;
+            body.appendChild(node);
+            node = next;
+          }
+          section.appendChild(body);
+        }
+        heading.classList.add("section-toggle");
+        heading.setAttribute("role", "button");
+        heading.setAttribute("tabindex", "0");
+        var initiallyCollapsed = heading.classList.contains("collapsed");
+        setSectionState(section, initiallyCollapsed);
+        heading.addEventListener("click", function (e) {
+          // Clicks on the anchor link (anchor.js) should not toggle.
+          var anchor = e.target.closest("a.anchorjs-link");
+          if (anchor) return;
+          e.preventDefault();
+          setSectionState(
+            section,
+            !section.classList.contains("section-collapsed")
+          );
+        });
+        heading.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setSectionState(
+              section,
+              !section.classList.contains("section-collapsed")
+            );
+          }
+        });
+      });
+    }
+    function setSectionState(section, collapsed) {
+      section.classList.toggle("section-collapsed", collapsed);
+      var heading = section.querySelector(":scope > h1, :scope > h2, :scope > h3");
+      if (heading) heading.setAttribute("aria-expanded", String(!collapsed));
+    }
+    setupSectionAccordion();
 
     // ─── Empty cell-output sweep ─────────────────────────────
     // Cells whose output rendered to nothing (no text, no media)

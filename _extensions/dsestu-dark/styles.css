@@ -225,6 +225,63 @@ h6::after { opacity: 0.18; }
   to   { background-position: -200% 50%; }
 }
 
+/* ─── Section accordion ──────────────────────────────────────────────────── */
+
+/* Headings that are wired as accordion toggles by the boot script. */
+section.level1 > h1.section-toggle,
+section.level2 > h2.section-toggle,
+section.level3 > h3.section-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Chevron — rotates when the section is collapsed. Drawn as a CSS triangle
+   in the heading's accent colour. */
+section.level1 > h1.section-toggle::before,
+section.level2 > h2.section-toggle::before,
+section.level3 > h3.section-toggle::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 0 5px 7px;
+  border-color: transparent transparent transparent var(--heading-c, var(--c-accent));
+  vertical-align: middle;
+  margin-right: 0.55em;
+  margin-top: -0.18em;
+  transform: rotate(90deg);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.75;
+}
+
+section.level1.section-collapsed > h1.section-toggle::before,
+section.level2.section-collapsed > h2.section-toggle::before,
+section.level3.section-collapsed > h3.section-toggle::before {
+  transform: rotate(0deg);
+}
+
+/* Section body — animates height: auto ↔ 0 (interpolate-size is already on). */
+section.level1 > .section-body,
+section.level2 > .section-body,
+section.level3 > .section-body {
+  overflow: hidden;
+  height: auto;
+  opacity: 1;
+  transition:
+    height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.22s ease,
+    margin-top 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+section.level1.section-collapsed > .section-body,
+section.level2.section-collapsed > .section-body,
+section.level3.section-collapsed > .section-body {
+  height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
 h3 {
   font-size: 1.1875rem;
   font-weight: 550;

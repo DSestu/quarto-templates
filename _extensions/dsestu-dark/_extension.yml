@@ -343,6 +343,63 @@ contributes:
                 btn.setAttribute("data-shortcut", "Tab");
                 var tocBtn = btn;
 
+                // ─── Section accordion ───────────────────────────────────
+                // Every h2/h3 section becomes click-collapsible. Quarto adds
+                // class="collapsed" to the heading when the source uses
+                // `## Title {.collapsed}` — those start collapsed.
+                function setupSectionAccordion() {
+                  document.querySelectorAll(
+                    "section.level1, section.level2, section.level3"
+                  ).forEach(function (section) {
+                    var heading = section.querySelector(":scope > h1, :scope > h2, :scope > h3");
+                    if (!heading) return;
+                    // Wrap everything after the heading in a .section-body div
+                    // so we can animate its height to 0.
+                    var body = section.querySelector(":scope > .section-body");
+                    if (!body) {
+                      body = document.createElement("div");
+                      body.className = "section-body";
+                      var node = heading.nextSibling;
+                      while (node) {
+                        var next = node.nextSibling;
+                        body.appendChild(node);
+                        node = next;
+                      }
+                      section.appendChild(body);
+                    }
+                    heading.classList.add("section-toggle");
+                    heading.setAttribute("role", "button");
+                    heading.setAttribute("tabindex", "0");
+                    var initiallyCollapsed = heading.classList.contains("collapsed");
+                    setSectionState(section, initiallyCollapsed);
+                    heading.addEventListener("click", function (e) {
+                      // Clicks on the anchor link (anchor.js) should not toggle.
+                      var anchor = e.target.closest("a.anchorjs-link");
+                      if (anchor) return;
+                      e.preventDefault();
+                      setSectionState(
+                        section,
+                        !section.classList.contains("section-collapsed")
+                      );
+                    });
+                    heading.addEventListener("keydown", function (e) {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSectionState(
+                          section,
+                          !section.classList.contains("section-collapsed")
+                        );
+                      }
+                    });
+                  });
+                }
+                function setSectionState(section, collapsed) {
+                  section.classList.toggle("section-collapsed", collapsed);
+                  var heading = section.querySelector(":scope > h1, :scope > h2, :scope > h3");
+                  if (heading) heading.setAttribute("aria-expanded", String(!collapsed));
+                }
+                setupSectionAccordion();
+
                 // ─── Empty cell-output sweep ─────────────────────────────
                 // Cells whose output rendered to nothing (no text, no media)
                 // get a marker class so CSS can hide them and their wrapper.

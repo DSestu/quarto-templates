@@ -227,6 +227,23 @@ Below is how Jupyter cell outputs render in this template — set on a deeper su
 </div>
 ```
 
+## Section accordion
+
+Click any section heading to collapse or expand its content. Sections with the `{.collapsed}` attribute start collapsed by default.
+
+### A normally-expanded subsection
+
+This subsection is open at first load. Clicking the heading toggles it.
+
+### Long content collapses cleanly {.collapsed}
+
+This subsection starts collapsed because the source has `### Heading {.collapsed}`. The chevron rotates and the body's height animates to zero.
+
+```python
+def example():
+    return "hidden until expanded"
+```
+
 ## Closing notes
 
 Every color is a CSS custom property in `theme.scss`. To change the accent — say from amber to a cooler instrument cyan — edit `--c-accent` and `--c-accent-bright`. To change the type family, override `mainfont` in `_quarto.yml` and `$font-family-sans-serif` in `theme.scss`.
