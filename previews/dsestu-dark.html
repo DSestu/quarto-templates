@@ -3881,6 +3881,180 @@ border-radius: 0.4rem;
 border: 1px solid color-mix(in srgb, var(--c-accent) 28%, transparent);
 }
 
+
+
+.toc-preview {
+position: fixed;
+width: 260px;
+height: 220px;
+background: var(--c-bg);
+border: 1px solid var(--c-border-soft);
+border-radius: 0.5rem;
+box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5),
+0 0 0 1px color-mix(in srgb, var(--c-accent) 10%, transparent);
+overflow: hidden;
+pointer-events: none;
+opacity: 0;
+transform: translateX(-6px);
+transition:
+opacity 0.18s ease,
+transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+z-index: 80;
+isolation: isolate;
+}
+.toc-preview.is-visible {
+opacity: 1;
+transform: translateX(0);
+}
+
+.toc-preview-inner {
+position: absolute;
+top: 0;
+left: 0;
+width: 780px; 
+height: 660px;
+transform: scale(0.333);
+transform-origin: 0 0;
+padding: 1.25rem;
+color: var(--c-text);
+background: var(--c-bg);
+overflow: hidden;
+}
+
+.toc-preview-inner *,
+.toc-preview-inner *::before,
+.toc-preview-inner *::after {
+animation: none !important;
+transition: none !important;
+}
+
+.toc-preview::after {
+content: "";
+position: absolute;
+left: 0;
+right: 0;
+bottom: 0;
+height: 60px;
+background: linear-gradient(
+to bottom,
+transparent 0%,
+color-mix(in srgb, var(--c-bg) 92%, transparent) 100%
+);
+pointer-events: none;
+}
+@media (max-width: 1279.98px) {
+.toc-preview { display: none; }
+}
+
+.export-toggle {
+position: fixed;
+top: 0.875rem;
+left: calc(0.875rem + (34px + 0.5rem) * 3);
+z-index: 60;
+height: 34px;
+padding: 0 0.35rem 0 0.45rem;
+display: inline-flex;
+align-items: center;
+gap: 0.22rem;
+background: var(--c-surface);
+border: 1px solid var(--c-border-soft);
+border-radius: 0.45rem;
+color: var(--c-text-muted);
+cursor: pointer;
+font-family: "Geist Mono", ui-monospace, monospace;
+font-size: 0.66rem;
+font-weight: 500;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+backdrop-filter: blur(16px) saturate(150%);
+-webkit-backdrop-filter: blur(16px) saturate(150%);
+box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 4px 12px -4px rgba(0, 0, 0, 0.35);
+transition:
+background-color 0.15s ease,
+border-color 0.15s ease,
+color 0.15s ease,
+transform 0.12s ease;
+}
+.export-toggle:hover {
+color: var(--c-text-bright);
+border-color: color-mix(in srgb, var(--c-accent) 32%, var(--c-border-soft));
+background: color-mix(in srgb, var(--c-accent) 6%, var(--c-surface));
+}
+.export-toggle:active { transform: scale(0.96); }
+.export-toggle .export-label { display: inline-block; }
+.export-toggle svg { display: block; }
+.export-toggle .export-caret {
+margin-left: 0.05rem;
+opacity: 0.7;
+transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease;
+}
+.export-toggle[aria-expanded="true"] .export-caret {
+transform: rotate(180deg);
+opacity: 1;
+}
+
+.export-menu {
+position: fixed;
+z-index: 65;
+min-width: 220px;
+padding: 0.35rem;
+background: var(--c-surface);
+border: 1px solid var(--c-border-soft);
+border-radius: 0.5rem;
+box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.5),
+0 0 0 1px color-mix(in srgb, var(--c-accent) 10%, transparent);
+display: flex;
+flex-direction: column;
+gap: 0.15rem;
+opacity: 0;
+transform: translateY(-4px) scale(0.98);
+pointer-events: none;
+transform-origin: top left;
+transition:
+opacity 0.18s ease,
+transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.export-menu.is-open {
+opacity: 1;
+transform: translateY(0) scale(1);
+pointer-events: auto;
+}
+.export-menu-item {
+appearance: none;
+background: transparent;
+border: 0;
+text-align: left;
+display: flex;
+align-items: baseline;
+gap: 0.55rem;
+padding: 0.5rem 0.7rem;
+border-radius: 0.35rem;
+color: var(--c-text);
+cursor: pointer;
+font-family: "Geist", system-ui, sans-serif;
+font-size: 0.82rem;
+transition: background-color 0.12s ease, color 0.12s ease;
+}
+.export-menu-item:hover,
+.export-menu-item:focus-visible {
+background: color-mix(in srgb, var(--c-accent) 12%, var(--c-surface));
+color: var(--c-text-bright);
+outline: none;
+}
+.export-menu-ext {
+font-family: "Geist Mono", ui-monospace, monospace;
+font-size: 0.78rem;
+color: var(--c-accent);
+min-width: 3.5em;
+}
+.export-menu-desc {
+font-size: 0.78rem;
+color: var(--c-text-muted);
+}
+@media (max-width: 767.98px) {
+.export-toggle,
+.export-menu { display: none; }
+}
 .code-fold-toggle {
 position: fixed;
 top: 0.875rem;
@@ -5510,6 +5684,215 @@ The interface your user talks to.
     });
     themeBtn.setAttribute("data-shortcut", "D");
 
+    // ─── Source export button (.qmd / .ipynb) ────────────────
+    // The Lua filter embeds the source in #dsestu-source as
+    // either .qmd or .ipynb (outputs stripped). A single button
+    // opens a dropdown with both formats; if the requested format
+    // differs from the embedded one, we convert in-browser.
+    (function setupSourceExport() {
+      var src = document.getElementById("dsestu-source");
+      if (!src) return;
+      var sourceKind = src.getAttribute("data-kind") || "qmd";
+      var sourceText = src.value;
+
+      // Derive filename from the document's title (camelCase,
+      // alphanumerics only) so OS file managers stay happy.
+      function sanitizeName(title) {
+        var words = (title || "")
+          .replace(/[^A-Za-z0-9\s_-]+/g, " ")
+          .split(/[\s_\-]+/)
+          .filter(Boolean);
+        if (!words.length) return "document";
+        return words.map(function (w) { return w.toLowerCase(); }).join("_");
+      }
+      function getDocTitle() {
+        var el = document.querySelector(
+          "header#title-block-header h1.title, " +
+          "#title-block-header h1, h1.title"
+        );
+        if (el && el.textContent.trim()) return el.textContent.trim();
+        return (document.title || "").trim() || "document";
+      }
+      var sourceName = sanitizeName(getDocTitle());
+
+      function ipynbToQmd(content) {
+        var nb;
+        try { nb = JSON.parse(content); } catch (e) { return ""; }
+        var lang = "python";
+        try {
+          lang = (nb.metadata && nb.metadata.kernelspec &&
+                  nb.metadata.kernelspec.language) || "python";
+        } catch (e) {}
+        var lines = ["---", "title: \"" + sourceName + "\"", "---", ""];
+        (nb.cells || []).forEach(function (cell) {
+          var s = Array.isArray(cell.source) ? cell.source.join("") : (cell.source || "");
+          if (cell.cell_type === "markdown") {
+            lines.push(s);
+          } else if (cell.cell_type === "code") {
+            lines.push("```{" + lang + "}");
+            lines.push(s);
+            lines.push("```");
+          } else if (cell.cell_type === "raw") {
+            lines.push(s);
+          }
+          lines.push("");
+        });
+        return lines.join("\n");
+      }
+
+      function qmdToIpynb(content) {
+        // Strip YAML front matter
+        var body = content.replace(/^---\n[\s\S]*?\n---\n?/, "");
+        var cells = [];
+        var fenceRe = /```\{([^}\s]+)[^}]*\}\n([\s\S]*?)```\s*\n?/g;
+        var lastIdx = 0;
+        var m;
+        while ((m = fenceRe.exec(body)) !== null) {
+          var before = body.slice(lastIdx, m.index);
+          if (before.trim()) {
+            cells.push({
+              cell_type: "markdown",
+              metadata: {},
+              source: before.split("\n").map(function (l, i, a) {
+                return i === a.length - 1 ? l : l + "\n";
+              })
+            });
+          }
+          cells.push({
+            cell_type: "code",
+            metadata: {},
+            execution_count: null,
+            outputs: [],
+            source: m[2].replace(/\n$/, "").split("\n").map(function (l, i, a) {
+              return i === a.length - 1 ? l : l + "\n";
+            })
+          });
+          lastIdx = fenceRe.lastIndex;
+        }
+        var trailing = body.slice(lastIdx);
+        if (trailing.trim()) {
+          cells.push({
+            cell_type: "markdown",
+            metadata: {},
+            source: trailing.split("\n").map(function (l, i, a) {
+              return i === a.length - 1 ? l : l + "\n";
+            })
+          });
+        }
+        return JSON.stringify({
+          cells: cells,
+          metadata: {
+            kernelspec: {
+              display_name: "Python 3",
+              language: "python",
+              name: "python3"
+            }
+          },
+          nbformat: 4,
+          nbformat_minor: 5
+        }, null, 1);
+      }
+
+      function downloadBlob(content, filename, mime) {
+        var blob = new Blob([content], { type: mime });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 0);
+      }
+
+      function exportAs(format) {
+        if (format === "qmd") {
+          var content = sourceKind === "qmd"
+            ? sourceText
+            : ipynbToQmd(sourceText);
+          downloadBlob(content, sourceName + ".qmd", "text/markdown");
+        } else if (format === "ipynb") {
+          var c = sourceKind === "ipynb"
+            ? sourceText
+            : qmdToIpynb(sourceText);
+          downloadBlob(c, sourceName + ".ipynb", "application/x-ipynb+json");
+        }
+      }
+
+      // Build the dropdown trigger button + menu.
+      var exportBtn = document.createElement("button");
+      exportBtn.className = "export-toggle";
+      exportBtn.type = "button";
+      exportBtn.setAttribute("aria-label", "Export source file");
+      exportBtn.setAttribute("aria-haspopup", "menu");
+      exportBtn.setAttribute("aria-expanded", "false");
+      exportBtn.innerHTML =
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+        'stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M14 3v5h5"/>' +
+          '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>' +
+          '<line x1="12" y1="12" x2="12" y2="18"/>' +
+          '<polyline points="9 15 12 18 15 15"/>' +
+        '</svg>' +
+        '<svg class="export-caret" width="10" height="10" viewBox="0 0 24 24" ' +
+        'fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" ' +
+        'stroke-linejoin="round" aria-hidden="true">' +
+          '<polyline points="6 9 12 15 18 9"/>' +
+        '</svg>';
+      document.body.appendChild(exportBtn);
+
+      var exportMenu = document.createElement("div");
+      exportMenu.className = "export-menu";
+      exportMenu.setAttribute("role", "menu");
+      exportMenu.innerHTML =
+        '<button type="button" class="export-menu-item" role="menuitem" data-format="qmd">' +
+          '<span class="export-menu-ext">.qmd</span>' +
+          '<span class="export-menu-desc">Quarto markdown</span>' +
+        '</button>' +
+        '<button type="button" class="export-menu-item" role="menuitem" data-format="ipynb">' +
+          '<span class="export-menu-ext">.ipynb</span>' +
+          '<span class="export-menu-desc">Jupyter notebook (no outputs)</span>' +
+        '</button>';
+      document.body.appendChild(exportMenu);
+
+      function setMenuOpen(open) {
+        exportMenu.classList.toggle("is-open", open);
+        exportBtn.setAttribute("aria-expanded", String(open));
+        if (open) {
+          // Position the menu directly below the trigger.
+          var r = exportBtn.getBoundingClientRect();
+          exportMenu.style.top = (r.bottom + 6) + "px";
+          exportMenu.style.left = r.left + "px";
+        }
+      }
+
+      exportBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        setMenuOpen(!exportMenu.classList.contains("is-open"));
+      });
+      exportMenu.addEventListener("click", function (e) {
+        var item = e.target.closest(".export-menu-item");
+        if (!item) return;
+        var fmt = item.getAttribute("data-format");
+        exportAs(fmt);
+        setMenuOpen(false);
+      });
+      document.addEventListener("click", function (e) {
+        if (!exportMenu.classList.contains("is-open")) return;
+        if (exportMenu.contains(e.target) || exportBtn.contains(e.target)) return;
+        setMenuOpen(false);
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && exportMenu.classList.contains("is-open")) {
+          setMenuOpen(false);
+          exportBtn.focus();
+        }
+      });
+    })();
+
     var toc = document.querySelector("nav[role='doc-toc'], #TOC");
 
     // ─── Toggle button ───────────────────────────────────────
@@ -5555,6 +5938,85 @@ The interface your user talks to.
     });
     btn.setAttribute("data-shortcut", "Tab");
     var tocBtn = btn;
+
+    // ─── TOC entry hover preview ─────────────────────────────
+    // Hovering a TOC link spawns a tiny floating preview of the
+    // target section: we clone the section subtree into a sandbox
+    // panel and scale it down so the user gets a "looks like X"
+    // glance before clicking.
+    if (toc) {
+      var previewEl = document.createElement("div");
+      previewEl.className = "toc-preview";
+      previewEl.setAttribute("aria-hidden", "true");
+      var previewInner = document.createElement("div");
+      previewInner.className = "toc-preview-inner";
+      previewEl.appendChild(previewInner);
+      document.body.appendChild(previewEl);
+
+      var hoverTimer = null;
+      var leaveTimer = null;
+      var currentHash = null;
+
+      function showPreview(link, hash) {
+        if (!hash || hash.charAt(0) !== "#") return;
+        if (currentHash === hash && previewEl.classList.contains("is-visible")) return;
+        var target = document.getElementById(hash.slice(1));
+        if (!target) return;
+        // Target is the heading; the section containing it is the
+        // wrapper we want to clone.
+        var section = target.closest("section") || target;
+        var clone = section.cloneNode(true);
+        // Strip elements that don't render well at preview scale
+        // or would re-trigger animations/audio.
+        clone.querySelectorAll(
+          "script, .toc-toggle, .theme-toggle, .code-fold-toggle, " +
+          ".export-toggle, .anchorjs-link, button"
+        ).forEach(function (n) { n.remove(); });
+        // Inline videos / iframes get poster-only display
+        clone.querySelectorAll("iframe, video, audio").forEach(function (n) {
+          n.removeAttribute("src");
+        });
+        previewInner.innerHTML = "";
+        previewInner.appendChild(clone);
+
+        // Position the panel next to the TOC link
+        var rect = link.getBoundingClientRect();
+        var top = rect.top;
+        var left = rect.right + 8;
+        var maxTop = window.innerHeight - 240;
+        if (top > maxTop) top = maxTop;
+        if (top < 8) top = 8;
+        previewEl.style.top = top + "px";
+        previewEl.style.left = left + "px";
+        previewEl.classList.add("is-visible");
+        currentHash = hash;
+      }
+
+      function hidePreview() {
+        previewEl.classList.remove("is-visible");
+        currentHash = null;
+      }
+
+      toc.addEventListener("mouseover", function (e) {
+        var link = e.target.closest("a[href^='#']");
+        if (!link) return;
+        if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+        if (hoverTimer) clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(function () {
+          showPreview(link, link.getAttribute("href"));
+        }, 220);
+      });
+      toc.addEventListener("mouseout", function (e) {
+        if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
+        var link = e.target.closest("a[href^='#']");
+        if (!link) return;
+        // Delay hide so the user can move into the preview if
+        // they want — but currently the preview is non-interactive.
+        leaveTimer = setTimeout(hidePreview, 120);
+      });
+      // Hide on scroll (preview position would drift).
+      window.addEventListener("scroll", hidePreview, { passive: true });
+    }
 
     // ─── Section accordion ───────────────────────────────────
     // Every h2/h3 section becomes click-collapsible. Quarto adds
@@ -5924,6 +6386,260 @@ The interface your user talks to.
   });
 })();
 </script>
+<textarea hidden id="dsestu-source" data-kind="qmd" data-name="template">---
+title: &quot;Field notes from a cool instrument&quot;
+subtitle: &quot;A dark-mode Quarto template tuned for long-form analytical writing, with one bold typographic moment at the title and quiet discipline everywhere else.&quot;
+author:
+  - David Sestu
+date: &quot;2026.06.16&quot;
+description: |
+  Every component shipped with the template, rendered in a single page so the
+  type, palette, and rhythm can be audited end to end.
+categories: [template, design, dark-mode]
+---
+
+::: {.lead}
+A notebook should make its argument easy to follow. This template keeps the visual language quiet — a cool deep-blue base, warm cream text, a single sodium-amber accent — so the analysis stays in the foreground.
+:::
+
+Type and code are both set in **Geist**, with **Geist Mono** for monospace. Hierarchy is built from weight contrast within one family rather than face contrast across two. The palette runs from `#0e1116` at the page edge up through `#1a1f27` for code surfaces, with `#f0b232` reserved for emphasis and active states.
+
+## Headings &amp; hierarchy
+
+H1 reads as a title through weight and size, not through a contrasting family. H2 carries a small amber tick above it instead of a rule beneath — a section break without the newspaper move. H3 and below stay smaller and tighter.
+
+### A third-level heading
+
+Reads as a divider, not a banner.
+
+#### A fourth-level heading
+
+For micro-structure inside a sub-section. Switches to Geist so it doesn&#39;t compete with the Fraunces hierarchy.
+
+##### TINY MONO LABEL
+
+For tagging blocks of metadata or run identifiers.
+
+## Prose, emphasis, and inline elements
+
+Body text is Geist with a 1.6 line-height. Emphasis uses *Geist italic* — quiet, not theatrical. Inline `code` is set in Geist Mono with subtle surface fill. You can ==highlight a phrase== with `mark`, render &lt;kbd&gt;⌘&lt;/kbd&gt; + &lt;kbd&gt;K&lt;/kbd&gt; as keyboard shortcuts, and use abbreviations like &lt;abbr title=&quot;Monthly Recurring Revenue&quot;&gt;MRR&lt;/abbr&gt; with a dotted underline.
+
+Links underline in amber with a low-opacity stroke that solidifies on hover; [external links](https://quarto.org) do not get an arrow — the underline color already tells you everything.
+
+&gt; &quot;The reason we&#39;re building this is not aesthetics — it&#39;s that good design is the externalization of careful thinking. If the document looks careful, the reader gives the argument more room.&quot;
+&gt;
+&gt; — *Anonymous, after too much coffee*
+
+## Callouts
+
+Five flavors, each desaturated to sit quietly against the dark base.
+
+::: {.callout-note}
+## A note
+
+Use notes for context that helps a reader without being load-bearing.
+:::
+
+::: {.callout-tip}
+## A tip
+
+Tips highlight a recommended path. Reach for them sparingly.
+:::
+
+::: {.callout-warning}
+## A warning
+
+Warnings flag things that could break — silent failures, performance cliffs, edge cases. The amber here is the same one as the brand accent, so warnings double as gentle emphasis.
+:::
+
+::: {.callout-important}
+## Important
+
+Important callouts are for non-negotiable constraints: data semantics, security boundaries, compliance.
+:::
+
+::: {.callout-caution}
+## A caution
+
+Cautions are for actions the reader can take that are not easily reversible.
+:::
+
+The simple variant drops the box and keeps only a colored left rule:
+
+::: {.callout-note appearance=&quot;simple&quot;}
+A simple-style callout — minimal chrome, left bar only.
+:::
+
+## Code blocks
+
+Code blocks sit on the surface tone with a hairline border, rounded just enough to feel made, with a small monospace language tag in the top-right. Copy buttons reveal on hover.
+
+```python
+from __future__ import annotations
+import polars as pl
+
+def monthly_recurring_revenue(invoices: pl.DataFrame) -&gt; pl.DataFrame:
+    &quot;&quot;&quot;Normalize all billing periods to a monthly cadence.&quot;&quot;&quot;
+    return (
+        invoices
+        .filter(pl.col(&quot;status&quot;) == &quot;paid&quot;)
+        .with_columns(
+            mrr=pl.when(pl.col(&quot;period&quot;) == &quot;yearly&quot;)
+              .then(pl.col(&quot;amount&quot;) / 12)
+              .otherwise(pl.col(&quot;amount&quot;))
+        )
+        .group_by(pl.col(&quot;invoice_date&quot;).dt.truncate(&quot;1mo&quot;))
+        .agg(pl.col(&quot;mrr&quot;).sum().alias(&quot;total_mrr&quot;))
+        .sort(&quot;invoice_date&quot;)
+    )
+```
+
+```sql
+-- Subscriptions with at least one paid invoice in the last 30 days
+select
+    s.id           as subscription_id,
+    s.customer_id,
+    s.plan_id,
+    sum(i.amount)  as revenue_30d
+from subscriptions s
+join invoices i on i.subscription_id = s.id
+where i.status = &#39;paid&#39;
+  and i.paid_at &gt;= now() - interval &#39;30 days&#39;
+group by 1, 2, 3
+order by revenue_30d desc
+limit 25;
+```
+
+```r
+library(ggplot2)
+ggplot(mpg, aes(displ, hwy, color = class)) +
+  geom_point(alpha = 0.7, size = 2.5) +
+  geom_smooth(method = &quot;loess&quot;, se = FALSE) +
+  scale_color_viridis_d(option = &quot;magma&quot;) +
+  theme_minimal(base_family = &quot;Geist&quot;)
+```
+
+Inline `python` like `df.groupby(&#39;region&#39;).agg(&#39;sum&#39;)` flows into prose without breaking the baseline.
+
+## Tables
+
+Tables get a hairline border, rounded corners, mono-caps headers, and tabular figures via `.numeric`.
+
+| Region        | Stations | Active rate | Avg connections / day |
+|:--------------|---------:|------------:|----------------------:|
+| France        |   12,847 |       82.4% |                  1.42 |
+| Spain         |    3,210 |       77.1% |                  1.18 |
+| Germany       |    2,508 |       88.9% |                  1.61 |
+| Italy         |    1,892 |       73.0% |                  0.97 |
+| United States |      441 |       65.8% |                  0.84 |
+
+: Active stations and connection density by region {.striped tbl-colwidths=&quot;[30,18,18,34]&quot;}
+
+## Figures
+
+Figures sit centered with a Fraunces-italic caption beneath.
+
+![A placeholder figure — replace with your output. Captions read in italic so they recede from the artwork.](https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&amp;q=80){#fig-example fig-alt=&quot;Abstract pattern&quot; width=100%}
+
+Cross-reference it as @fig-example for a hover popup.
+
+## Math
+
+Inline math like $e^{i\pi} + 1 = 0$ flows in the baseline. Display math gets generous vertical space:
+
+$$
+\operatorname{MRR}_t = \sum_{s \in \mathcal{S}_t}
+\begin{cases}
+\dfrac{\text{amount}_s}{12} &amp; \text{if billing}_s = \text{yearly} \\[6pt]
+\dfrac{\text{amount}_s}{3}  &amp; \text{if billing}_s = \text{quarterly} \\[6pt]
+\text{amount}_s             &amp; \text{if billing}_s = \text{monthly}
+\end{cases}
+$$ {#eq-mrr}
+
+Reference equations with @eq-mrr.
+
+## Lists
+
+Bulleted lists use an amber marker:
+
+- Generous line-height for scannable items.
+- Nested lists inherit the same rhythm.
+  - Second level
+  - With its own marker color
+- A tighter top margin keeps adjacent text close.
+
+Numbered lists are equally restrained:
+
+1. First, define the question.
+2. Then, pick the smallest dataset that answers it.
+3. Finally, ship the chart.
+
+Definition lists:
+
+API
+:   The interface another developer talks to.
+
+UX
+:   The interface your user talks to.
+
+## Footnotes
+
+Footnote markers sit as small rounded mono pills[^1] — quieter than the default superscript. Hover for the contents; the full list collects at the bottom.[^2]
+
+[^1]: Inspired by Stripe Press: small, restrained, unmistakable.
+[^2]: With a generous top border so the footnote section reads as its own register.
+
+## Keyboard shortcuts and abbreviations
+
+Press &lt;kbd&gt;Ctrl&lt;/kbd&gt; + &lt;kbd&gt;Shift&lt;/kbd&gt; + &lt;kbd&gt;P&lt;/kbd&gt; to open the command palette. Acronyms like &lt;abbr title=&quot;Annual Recurring Revenue&quot;&gt;ARR&lt;/abbr&gt; render with a dotted underline.
+
+## A horizontal rule
+
+The horizontal rule is a short centered hairline — a quiet break rather than a decorative fleuron.
+
+---
+
+## Cell outputs
+
+Below is how Jupyter cell outputs render in this template — set on a deeper surface so they read as the document&#39;s quiet voice replying to the code.
+
+```{=html}
+&lt;div class=&quot;cell&quot;&gt;
+  &lt;pre class=&quot;sourceCode python&quot;&gt;&lt;code class=&quot;sourceCode python&quot;&gt;df.head()&lt;/code&gt;&lt;/pre&gt;
+  &lt;div class=&quot;cell-output&quot;&gt;
+    &lt;pre&gt;&lt;code&gt;   region  stations  active_rate
+0  France     12847        0.824
+1  Spain       3210        0.771
+2  Germany    2508         0.889&lt;/code&gt;&lt;/pre&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+```
+
+## Section accordion
+
+Click any section heading to collapse or expand its content. Sections with the `{.collapsed}` attribute start collapsed by default.
+
+### A normally-expanded subsection
+
+This subsection is open at first load. Clicking the heading toggles it.
+
+### Long content collapses cleanly {.collapsed}
+
+This subsection starts collapsed because the source has `### Heading {.collapsed}`. The chevron rotates and the body&#39;s height animates to zero.
+
+```python
+def example():
+    return &quot;hidden until expanded&quot;
+```
+
+## Closing notes
+
+Every color is a CSS custom property in `theme.scss`. To change the accent — say from amber to a cooler instrument cyan — edit `--c-accent` and `--c-accent-bright`. To change the type family, override `mainfont` in `_quarto.yml` and `$font-family-sans-serif` in `theme.scss`.
+
+::: {.callout-tip appearance=&quot;simple&quot;}
+Render with `quarto render template.qmd` from the template directory.
+:::
+</textarea>
 
 
 

@@ -1763,6 +1763,192 @@ details.code-fold.fold-group-first > summary::after {
 
 /* ─── Code-fold toggle button ────────────────────────────────────────────── */
 
+/* ─── TOC hover preview ──────────────────────────────────────────────────── */
+
+/* Floating panel that shows a scaled-down clone of the hovered section. */
+.toc-preview {
+  position: fixed;
+  width: 260px;
+  height: 220px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border-soft);
+  border-radius: 0.5rem;
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5),
+              0 0 0 1px color-mix(in srgb, var(--c-accent) 10%, transparent);
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 80;
+  isolation: isolate;
+}
+
+.toc-preview.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* The clone is scaled down so the full visible window shows ~3x more content
+   than its actual size. Anchored to top-left so the section heading is
+   visible immediately. */
+.toc-preview-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 780px;          /* 260 / 0.333 */
+  height: 660px;
+  transform: scale(0.333);
+  transform-origin: 0 0;
+  padding: 1.25rem;
+  color: var(--c-text);
+  background: var(--c-bg);
+  overflow: hidden;
+}
+
+/* Suppress per-block animations in the preview — they'd just chew CPU. */
+.toc-preview-inner *,
+.toc-preview-inner *::before,
+.toc-preview-inner *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Fade-out the bottom of the preview so the cut-off feels intentional. */
+.toc-preview::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 60px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--c-bg) 92%, transparent) 100%
+  );
+  pointer-events: none;
+}
+
+@media (max-width: 1279.98px) {
+  .toc-preview { display: none; }
+}
+
+/* Single export button (with dropdown) — sits after the code-fold toggle. */
+.export-toggle {
+  position: fixed;
+  top: 0.875rem;
+  left: calc(0.875rem + (34px + 0.5rem) * 3);
+  z-index: 60;
+  height: 34px;
+  padding: 0 0.35rem 0 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-soft);
+  border-radius: 0.45rem;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 4px 12px -4px rgba(0, 0, 0, 0.35);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
+}
+.export-toggle:hover {
+  color: var(--c-text-bright);
+  border-color: color-mix(in srgb, var(--c-accent) 32%, var(--c-border-soft));
+  background: color-mix(in srgb, var(--c-accent) 6%, var(--c-surface));
+}
+.export-toggle:active { transform: scale(0.96); }
+.export-toggle .export-label { display: inline-block; }
+.export-toggle svg { display: block; }
+.export-toggle .export-caret {
+  margin-left: 0.05rem;
+  opacity: 0.7;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease;
+}
+.export-toggle[aria-expanded="true"] .export-caret {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+/* Dropdown menu */
+.export-menu {
+  position: fixed;
+  z-index: 65;
+  min-width: 220px;
+  padding: 0.35rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-soft);
+  border-radius: 0.5rem;
+  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.5),
+              0 0 0 1px color-mix(in srgb, var(--c-accent) 10%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  pointer-events: none;
+  transform-origin: top left;
+  transition:
+    opacity 0.18s ease,
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.export-menu.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.export-menu-item {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.35rem;
+  color: var(--c-text);
+  cursor: pointer;
+  font-family: "Geist", system-ui, sans-serif;
+  font-size: 0.82rem;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.export-menu-item:hover,
+.export-menu-item:focus-visible {
+  background: color-mix(in srgb, var(--c-accent) 12%, var(--c-surface));
+  color: var(--c-text-bright);
+  outline: none;
+}
+.export-menu-ext {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--c-accent);
+  min-width: 3.5em;
+}
+.export-menu-desc {
+  font-size: 0.78rem;
+  color: var(--c-text-muted);
+}
+
+@media (max-width: 767.98px) {
+  .export-toggle,
+  .export-menu { display: none; }
+}
+
 .code-fold-toggle {
   position: fixed;
   top: 0.875rem;

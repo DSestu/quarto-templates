@@ -11,6 +11,9 @@ contributes:
         - theme.scss
       css: styles.css
 
+      filters:
+        - source-export.lua
+
       toc: true
       toc-location: left
       toc-depth: 3
@@ -297,6 +300,215 @@ contributes:
                 });
                 themeBtn.setAttribute("data-shortcut", "D");
 
+                // ─── Source export button (.qmd / .ipynb) ────────────────
+                // The Lua filter embeds the source in #dsestu-source as
+                // either .qmd or .ipynb (outputs stripped). A single button
+                // opens a dropdown with both formats; if the requested format
+                // differs from the embedded one, we convert in-browser.
+                (function setupSourceExport() {
+                  var src = document.getElementById("dsestu-source");
+                  if (!src) return;
+                  var sourceKind = src.getAttribute("data-kind") || "qmd";
+                  var sourceText = src.value;
+
+                  // Derive filename from the document's title (camelCase,
+                  // alphanumerics only) so OS file managers stay happy.
+                  function sanitizeName(title) {
+                    var words = (title || "")
+                      .replace(/[^A-Za-z0-9\s_-]+/g, " ")
+                      .split(/[\s_\-]+/)
+                      .filter(Boolean);
+                    if (!words.length) return "document";
+                    return words.map(function (w) { return w.toLowerCase(); }).join("_");
+                  }
+                  function getDocTitle() {
+                    var el = document.querySelector(
+                      "header#title-block-header h1.title, " +
+                      "#title-block-header h1, h1.title"
+                    );
+                    if (el && el.textContent.trim()) return el.textContent.trim();
+                    return (document.title || "").trim() || "document";
+                  }
+                  var sourceName = sanitizeName(getDocTitle());
+
+                  function ipynbToQmd(content) {
+                    var nb;
+                    try { nb = JSON.parse(content); } catch (e) { return ""; }
+                    var lang = "python";
+                    try {
+                      lang = (nb.metadata && nb.metadata.kernelspec &&
+                              nb.metadata.kernelspec.language) || "python";
+                    } catch (e) {}
+                    var lines = ["---", "title: \"" + sourceName + "\"", "---", ""];
+                    (nb.cells || []).forEach(function (cell) {
+                      var s = Array.isArray(cell.source) ? cell.source.join("") : (cell.source || "");
+                      if (cell.cell_type === "markdown") {
+                        lines.push(s);
+                      } else if (cell.cell_type === "code") {
+                        lines.push("```{" + lang + "}");
+                        lines.push(s);
+                        lines.push("```");
+                      } else if (cell.cell_type === "raw") {
+                        lines.push(s);
+                      }
+                      lines.push("");
+                    });
+                    return lines.join("\n");
+                  }
+
+                  function qmdToIpynb(content) {
+                    // Strip YAML front matter
+                    var body = content.replace(/^---\n[\s\S]*?\n---\n?/, "");
+                    var cells = [];
+                    var fenceRe = /```\{([^}\s]+)[^}]*\}\n([\s\S]*?)```\s*\n?/g;
+                    var lastIdx = 0;
+                    var m;
+                    while ((m = fenceRe.exec(body)) !== null) {
+                      var before = body.slice(lastIdx, m.index);
+                      if (before.trim()) {
+                        cells.push({
+                          cell_type: "markdown",
+                          metadata: {},
+                          source: before.split("\n").map(function (l, i, a) {
+                            return i === a.length - 1 ? l : l + "\n";
+                          })
+                        });
+                      }
+                      cells.push({
+                        cell_type: "code",
+                        metadata: {},
+                        execution_count: null,
+                        outputs: [],
+                        source: m[2].replace(/\n$/, "").split("\n").map(function (l, i, a) {
+                          return i === a.length - 1 ? l : l + "\n";
+                        })
+                      });
+                      lastIdx = fenceRe.lastIndex;
+                    }
+                    var trailing = body.slice(lastIdx);
+                    if (trailing.trim()) {
+                      cells.push({
+                        cell_type: "markdown",
+                        metadata: {},
+                        source: trailing.split("\n").map(function (l, i, a) {
+                          return i === a.length - 1 ? l : l + "\n";
+                        })
+                      });
+                    }
+                    return JSON.stringify({
+                      cells: cells,
+                      metadata: {
+                        kernelspec: {
+                          display_name: "Python 3",
+                          language: "python",
+                          name: "python3"
+                        }
+                      },
+                      nbformat: 4,
+                      nbformat_minor: 5
+                    }, null, 1);
+                  }
+
+                  function downloadBlob(content, filename, mime) {
+                    var blob = new Blob([content], { type: mime });
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement("a");
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(function () {
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }, 0);
+                  }
+
+                  function exportAs(format) {
+                    if (format === "qmd") {
+                      var content = sourceKind === "qmd"
+                        ? sourceText
+                        : ipynbToQmd(sourceText);
+                      downloadBlob(content, sourceName + ".qmd", "text/markdown");
+                    } else if (format === "ipynb") {
+                      var c = sourceKind === "ipynb"
+                        ? sourceText
+                        : qmdToIpynb(sourceText);
+                      downloadBlob(c, sourceName + ".ipynb", "application/x-ipynb+json");
+                    }
+                  }
+
+                  // Build the dropdown trigger button + menu.
+                  var exportBtn = document.createElement("button");
+                  exportBtn.className = "export-toggle";
+                  exportBtn.type = "button";
+                  exportBtn.setAttribute("aria-label", "Export source file");
+                  exportBtn.setAttribute("aria-haspopup", "menu");
+                  exportBtn.setAttribute("aria-expanded", "false");
+                  exportBtn.innerHTML =
+                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+                    'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+                    'stroke-linejoin="round" aria-hidden="true">' +
+                      '<path d="M14 3v5h5"/>' +
+                      '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>' +
+                      '<line x1="12" y1="12" x2="12" y2="18"/>' +
+                      '<polyline points="9 15 12 18 15 15"/>' +
+                    '</svg>' +
+                    '<svg class="export-caret" width="10" height="10" viewBox="0 0 24 24" ' +
+                    'fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" ' +
+                    'stroke-linejoin="round" aria-hidden="true">' +
+                      '<polyline points="6 9 12 15 18 9"/>' +
+                    '</svg>';
+                  document.body.appendChild(exportBtn);
+
+                  var exportMenu = document.createElement("div");
+                  exportMenu.className = "export-menu";
+                  exportMenu.setAttribute("role", "menu");
+                  exportMenu.innerHTML =
+                    '<button type="button" class="export-menu-item" role="menuitem" data-format="qmd">' +
+                      '<span class="export-menu-ext">.qmd</span>' +
+                      '<span class="export-menu-desc">Quarto markdown</span>' +
+                    '</button>' +
+                    '<button type="button" class="export-menu-item" role="menuitem" data-format="ipynb">' +
+                      '<span class="export-menu-ext">.ipynb</span>' +
+                      '<span class="export-menu-desc">Jupyter notebook (no outputs)</span>' +
+                    '</button>';
+                  document.body.appendChild(exportMenu);
+
+                  function setMenuOpen(open) {
+                    exportMenu.classList.toggle("is-open", open);
+                    exportBtn.setAttribute("aria-expanded", String(open));
+                    if (open) {
+                      // Position the menu directly below the trigger.
+                      var r = exportBtn.getBoundingClientRect();
+                      exportMenu.style.top = (r.bottom + 6) + "px";
+                      exportMenu.style.left = r.left + "px";
+                    }
+                  }
+
+                  exportBtn.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    setMenuOpen(!exportMenu.classList.contains("is-open"));
+                  });
+                  exportMenu.addEventListener("click", function (e) {
+                    var item = e.target.closest(".export-menu-item");
+                    if (!item) return;
+                    var fmt = item.getAttribute("data-format");
+                    exportAs(fmt);
+                    setMenuOpen(false);
+                  });
+                  document.addEventListener("click", function (e) {
+                    if (!exportMenu.classList.contains("is-open")) return;
+                    if (exportMenu.contains(e.target) || exportBtn.contains(e.target)) return;
+                    setMenuOpen(false);
+                  });
+                  document.addEventListener("keydown", function (e) {
+                    if (e.key === "Escape" && exportMenu.classList.contains("is-open")) {
+                      setMenuOpen(false);
+                      exportBtn.focus();
+                    }
+                  });
+                })();
+
                 var toc = document.querySelector("nav[role='doc-toc'], #TOC");
 
                 // ─── Toggle button ───────────────────────────────────────
@@ -342,6 +554,85 @@ contributes:
                 });
                 btn.setAttribute("data-shortcut", "Tab");
                 var tocBtn = btn;
+
+                // ─── TOC entry hover preview ─────────────────────────────
+                // Hovering a TOC link spawns a tiny floating preview of the
+                // target section: we clone the section subtree into a sandbox
+                // panel and scale it down so the user gets a "looks like X"
+                // glance before clicking.
+                if (toc) {
+                  var previewEl = document.createElement("div");
+                  previewEl.className = "toc-preview";
+                  previewEl.setAttribute("aria-hidden", "true");
+                  var previewInner = document.createElement("div");
+                  previewInner.className = "toc-preview-inner";
+                  previewEl.appendChild(previewInner);
+                  document.body.appendChild(previewEl);
+
+                  var hoverTimer = null;
+                  var leaveTimer = null;
+                  var currentHash = null;
+
+                  function showPreview(link, hash) {
+                    if (!hash || hash.charAt(0) !== "#") return;
+                    if (currentHash === hash && previewEl.classList.contains("is-visible")) return;
+                    var target = document.getElementById(hash.slice(1));
+                    if (!target) return;
+                    // Target is the heading; the section containing it is the
+                    // wrapper we want to clone.
+                    var section = target.closest("section") || target;
+                    var clone = section.cloneNode(true);
+                    // Strip elements that don't render well at preview scale
+                    // or would re-trigger animations/audio.
+                    clone.querySelectorAll(
+                      "script, .toc-toggle, .theme-toggle, .code-fold-toggle, " +
+                      ".export-toggle, .anchorjs-link, button"
+                    ).forEach(function (n) { n.remove(); });
+                    // Inline videos / iframes get poster-only display
+                    clone.querySelectorAll("iframe, video, audio").forEach(function (n) {
+                      n.removeAttribute("src");
+                    });
+                    previewInner.innerHTML = "";
+                    previewInner.appendChild(clone);
+
+                    // Position the panel next to the TOC link
+                    var rect = link.getBoundingClientRect();
+                    var top = rect.top;
+                    var left = rect.right + 8;
+                    var maxTop = window.innerHeight - 240;
+                    if (top > maxTop) top = maxTop;
+                    if (top < 8) top = 8;
+                    previewEl.style.top = top + "px";
+                    previewEl.style.left = left + "px";
+                    previewEl.classList.add("is-visible");
+                    currentHash = hash;
+                  }
+
+                  function hidePreview() {
+                    previewEl.classList.remove("is-visible");
+                    currentHash = null;
+                  }
+
+                  toc.addEventListener("mouseover", function (e) {
+                    var link = e.target.closest("a[href^='#']");
+                    if (!link) return;
+                    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+                    if (hoverTimer) clearTimeout(hoverTimer);
+                    hoverTimer = setTimeout(function () {
+                      showPreview(link, link.getAttribute("href"));
+                    }, 220);
+                  });
+                  toc.addEventListener("mouseout", function (e) {
+                    if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
+                    var link = e.target.closest("a[href^='#']");
+                    if (!link) return;
+                    // Delay hide so the user can move into the preview if
+                    // they want — but currently the preview is non-interactive.
+                    leaveTimer = setTimeout(hidePreview, 120);
+                  });
+                  // Hide on scroll (preview position would drift).
+                  window.addEventListener("scroll", hidePreview, { passive: true });
+                }
 
                 // ─── Section accordion ───────────────────────────────────
                 // Every h2/h3 section becomes click-collapsible. Quarto adds
