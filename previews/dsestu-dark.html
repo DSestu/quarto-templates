@@ -2574,27 +2574,76 @@ cursor: pointer;
 user-select: none;
 }
 
-section.level1 > h1.section-toggle::before,
-section.level2 > h2.section-toggle::before,
-section.level3 > h3.section-toggle::before {
-content: "";
+.section-chev {
 display: inline-block;
-width: 0;
-height: 0;
-border-style: solid;
-border-width: 5px 0 5px 7px;
-border-color: transparent transparent transparent var(--heading-c, var(--c-accent));
-vertical-align: middle;
+width: 0.85em;
+height: 0.6em;
+position: relative;
+vertical-align: 0.05em;
 margin-right: 0.55em;
-margin-top: -0.18em;
-transform: rotate(90deg);
-transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-opacity: 0.75;
 }
-section.level1.section-collapsed > h1.section-toggle::before,
-section.level2.section-collapsed > h2.section-toggle::before,
-section.level3.section-collapsed > h3.section-toggle::before {
-transform: rotate(0deg);
+.section-chev::before,
+.section-chev::after {
+content: "";
+position: absolute;
+top: 50%;
+height: 2px;
+background: var(--heading-c, var(--c-accent));
+border-radius: 2px;
+opacity: 0.7;
+}
+
+.section-chev::before {
+left: 0;
+width: calc(50% + 0.5px);
+transform-origin: calc(100% - 0.5px) 50%;
+transform: translateY(-50%) rotate(0deg);
+
+transition:
+transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+opacity 0.18s ease,
+background-color 0.22s ease;
+}
+
+.section-chev::after {
+left: calc(50% - 0.5px);
+width: 0;
+transform-origin: 0.5px 50%;
+transform: translateY(-50%) rotate(0deg);
+
+transition:
+width 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
+transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+opacity 0.18s ease,
+background-color 0.22s ease;
+}
+
+section.level1.section-collapsed > h1.section-toggle .section-chev::before,
+section.level2.section-collapsed > h2.section-toggle .section-chev::before,
+section.level3.section-collapsed > h3.section-toggle .section-chev::before {
+transform: translateY(-50%) rotate(35deg);
+
+transition:
+transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
+opacity 0.18s ease,
+background-color 0.22s ease;
+}
+section.level1.section-collapsed > h1.section-toggle .section-chev::after,
+section.level2.section-collapsed > h2.section-toggle .section-chev::after,
+section.level3.section-collapsed > h3.section-toggle .section-chev::after {
+width: calc(50% + 0.5px);
+transform: translateY(-50%) rotate(-35deg);
+
+transition:
+width 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
+opacity 0.18s ease,
+background-color 0.22s ease;
+}
+
+.section-toggle:hover .section-chev::before,
+.section-toggle:hover .section-chev::after {
+opacity: 1;
 }
 
 section.level1 > .section-body,
@@ -5534,6 +5583,14 @@ The interface your user talks to.
         heading.classList.add("section-toggle");
         heading.setAttribute("role", "button");
         heading.setAttribute("tabindex", "0");
+        // Insert the morphing chevron (dash ↔ V) as the first
+        // child of the heading, before the section number/title.
+        if (!heading.querySelector(":scope > .section-chev")) {
+          var chev = document.createElement("span");
+          chev.className = "section-chev";
+          chev.setAttribute("aria-hidden", "true");
+          heading.insertBefore(chev, heading.firstChild);
+        }
         var initiallyCollapsed = heading.classList.contains("collapsed");
         setSectionState(section, initiallyCollapsed);
         heading.addEventListener("click", function (e) {

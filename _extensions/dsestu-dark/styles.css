@@ -235,30 +235,96 @@ section.level3 > h3.section-toggle {
   user-select: none;
 }
 
-/* Chevron — rotates when the section is collapsed. Drawn as a CSS triangle
-   in the heading's accent colour. */
-section.level1 > h1.section-toggle::before,
-section.level2 > h2.section-toggle::before,
-section.level3 > h3.section-toggle::before {
-  content: "";
+/* Morphing chevron — two-stage animation.
+   Expanded:  only the left half is drawn (a short dash ─).
+   Collapsing: the right half slides OUT from behind the left, then both
+               halves pivot down to form a chevron (▼).
+   Expanding (reverse): both halves un-pivot first, then the right half
+               retracts back under the left.
+
+   The two-stage timing is achieved with property-specific transition-delays
+   that differ between the default and `.section-collapsed` rules. CSS picks
+   the destination state's transition rule when a class change kicks in, so
+   each direction gets its own ordering. */
+.section-chev {
   display: inline-block;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 5px 0 5px 7px;
-  border-color: transparent transparent transparent var(--heading-c, var(--c-accent));
-  vertical-align: middle;
+  width: 0.85em;
+  height: 0.6em;
+  position: relative;
+  vertical-align: 0.05em;
   margin-right: 0.55em;
-  margin-top: -0.18em;
-  transform: rotate(90deg);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  opacity: 0.75;
 }
 
-section.level1.section-collapsed > h1.section-toggle::before,
-section.level2.section-collapsed > h2.section-toggle::before,
-section.level3.section-collapsed > h3.section-toggle::before {
-  transform: rotate(0deg);
+.section-chev::before,
+.section-chev::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  height: 2px;
+  background: var(--heading-c, var(--c-accent));
+  border-radius: 2px;
+  opacity: 0.7;
+}
+
+/* Left half — always visible at 50% width. Pivots around its right (inner)
+   end. Slight 0.5 px overlap toward centre is kept to defeat sub-pixel gaps. */
+.section-chev::before {
+  left: 0;
+  width: calc(50% + 0.5px);
+  transform-origin: calc(100% - 0.5px) 50%;
+  transform: translateY(-50%) rotate(0deg);
+  /* Default state defines the EXPAND direction (collapsed → default):
+     rotation runs immediately, slide-back comes after. */
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+    opacity 0.18s ease,
+    background-color 0.22s ease;
+}
+
+/* Right half — hidden behind the left half by default (width 0). Grows to
+   50% on collapse, then pivots. Pivots around its left (inner) end. */
+.section-chev::after {
+  left: calc(50% - 0.5px);
+  width: 0;
+  transform-origin: 0.5px 50%;
+  transform: translateY(-50%) rotate(0deg);
+  /* Default state — EXPAND direction: width shrinks AFTER the rotation. */
+  transition:
+    width 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+    opacity 0.18s ease,
+    background-color 0.22s ease;
+}
+
+/* Collapsed state — defines the COLLAPSE direction (default → collapsed). */
+section.level1.section-collapsed > h1.section-toggle .section-chev::before,
+section.level2.section-collapsed > h2.section-toggle .section-chev::before,
+section.level3.section-collapsed > h3.section-toggle .section-chev::before {
+  transform: translateY(-50%) rotate(35deg);
+  /* Left half rotates AFTER the right half has finished sliding out. */
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
+    opacity 0.18s ease,
+    background-color 0.22s ease;
+}
+
+section.level1.section-collapsed > h1.section-toggle .section-chev::after,
+section.level2.section-collapsed > h2.section-toggle .section-chev::after,
+section.level3.section-collapsed > h3.section-toggle .section-chev::after {
+  width: calc(50% + 0.5px);
+  transform: translateY(-50%) rotate(-35deg);
+  /* Right half slides out FIRST (0s delay), then rotates. */
+  transition:
+    width 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0.2s,
+    opacity 0.18s ease,
+    background-color 0.22s ease;
+}
+
+/* Heading hover brightens both halves. */
+.section-toggle:hover .section-chev::before,
+.section-toggle:hover .section-chev::after {
+  opacity: 1;
 }
 
 /* Section body — animates height: auto ↔ 0 (interpolate-size is already on). */

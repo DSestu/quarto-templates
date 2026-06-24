@@ -370,6 +370,14 @@ contributes:
                     heading.classList.add("section-toggle");
                     heading.setAttribute("role", "button");
                     heading.setAttribute("tabindex", "0");
+                    // Insert the morphing chevron (dash ↔ V) as the first
+                    // child of the heading, before the section number/title.
+                    if (!heading.querySelector(":scope > .section-chev")) {
+                      var chev = document.createElement("span");
+                      chev.className = "section-chev";
+                      chev.setAttribute("aria-hidden", "true");
+                      heading.insertBefore(chev, heading.firstChild);
+                    }
                     var initiallyCollapsed = heading.classList.contains("collapsed");
                     setSectionState(section, initiallyCollapsed);
                     heading.addEventListener("click", function (e) {
