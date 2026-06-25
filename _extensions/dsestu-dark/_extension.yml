@@ -463,15 +463,34 @@ contributes:
                   var exportMenu = document.createElement("div");
                   exportMenu.className = "export-menu";
                   exportMenu.setAttribute("role", "menu");
+                  var eyeSVG =
+                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ' +
+                    'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+                    'stroke-linejoin="round" aria-hidden="true">' +
+                      '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>' +
+                      '<circle cx="12" cy="12" r="3"/>' +
+                    '</svg>';
                   exportMenu.innerHTML =
-                    '<button type="button" class="export-menu-item" role="menuitem" data-format="qmd">' +
-                      '<span class="export-menu-ext">.qmd</span>' +
-                      '<span class="export-menu-desc">Quarto markdown</span>' +
-                    '</button>' +
-                    '<button type="button" class="export-menu-item" role="menuitem" data-format="ipynb">' +
-                      '<span class="export-menu-ext">.ipynb</span>' +
-                      '<span class="export-menu-desc">Jupyter notebook (no outputs)</span>' +
-                    '</button>';
+                    '<div class="export-menu-row">' +
+                      '<button type="button" class="export-menu-item" role="menuitem" data-format="qmd">' +
+                        '<span class="export-menu-ext">.qmd</span>' +
+                        '<span class="export-menu-desc">Quarto markdown</span>' +
+                      '</button>' +
+                      '<button type="button" class="export-menu-view" role="menuitem" ' +
+                        'data-format="qmd" aria-label="View .qmd source">' +
+                        eyeSVG +
+                      '</button>' +
+                    '</div>' +
+                    '<div class="export-menu-row">' +
+                      '<button type="button" class="export-menu-item" role="menuitem" data-format="ipynb">' +
+                        '<span class="export-menu-ext">.ipynb</span>' +
+                        '<span class="export-menu-desc">Jupyter notebook (no outputs)</span>' +
+                      '</button>' +
+                      '<button type="button" class="export-menu-view" role="menuitem" ' +
+                        'data-format="ipynb" aria-label="View .ipynb source">' +
+                        eyeSVG +
+                      '</button>' +
+                    '</div>';
                   document.body.appendChild(exportMenu);
 
                   function setMenuOpen(open) {
@@ -490,12 +509,306 @@ contributes:
                     setMenuOpen(!exportMenu.classList.contains("is-open"));
                   });
                   exportMenu.addEventListener("click", function (e) {
+                    var view = e.target.closest(".export-menu-view");
+                    if (view) {
+                      e.stopPropagation();
+                      var vfmt = view.getAttribute("data-format");
+                      openSourceModal(vfmt);
+                      setMenuOpen(false);
+                      return;
+                    }
                     var item = e.target.closest(".export-menu-item");
                     if (!item) return;
                     var fmt = item.getAttribute("data-format");
                     exportAs(fmt);
                     setMenuOpen(false);
                   });
+
+                  // ─── Source preview modal — Jupyter-style cell view ────
+                  // Parses the source into structured cells (front matter,
+                  // markdown chunks, code chunks) and renders them as a
+                  // notebook-style display with syntax-highlighted code.
+                  function escHtml(s) {
+                    return s.replace(/&/g, "&amp;")
+                            .replace(/</g, "&lt;")
+                            .replace(/>/g, "&gt;");
+                  }
+
+                  // ── Python tokenizer ──
+                  function highlightPython(code) {
+                    var patterns = [
+                      [/^#[^\n]*/, "sx-co"],
+                      [/^"""[\s\S]*?"""/, "sx-st"],
+                      [/^'''[\s\S]*?'''/, "sx-st"],
+                      [/^"(?:\\.|[^"\\\n])*"/, "sx-st"],
+                      [/^'(?:\\.|[^'\\\n])*'/, "sx-st"],
+                      [/^\b(def|class|return|if|else|elif|for|while|break|continue|import|from|as|in|is|not|and|or|with|try|except|finally|raise|yield|lambda|global|nonlocal|pass|async|await)\b/, "sx-kw"],
+                      [/^\b(True|False|None)\b/, "sx-cn"],
+                      [/^\b(print|len|range|list|dict|set|tuple|int|str|float|bool|type|isinstance|input|open|map|filter|sum|min|max|sorted|enumerate|zip|abs|round|any|all|reversed|getattr|setattr|hasattr)\b/, "sx-bu"],
+                      [/^\b\d+\.?\d*(?:[eE][+-]?\d+)?\b/, "sx-num"],
+                      [/^[A-Za-z_]\w*/, null],
+                      [/^\s+/, null],
+                      [/^./, null]
+                    ];
+                    var out = "";
+                    var safety = code.length * 4;
+                    while (code.length && safety-- > 0) {
+                      var matched = false;
+                      for (var i = 0; i < patterns.length; i++) {
+                        var m = code.match(patterns[i][0]);
+                        if (m) {
+                          var t = escHtml(m[0]);
+                          out += patterns[i][1]
+                            ? '<span class="' + patterns[i][1] + '">' + t + '</span>'
+                            : t;
+                          code = code.slice(m[0].length);
+                          matched = true;
+                          break;
+                        }
+                      }
+                      if (!matched) { out += escHtml(code[0]); code = code.slice(1); }
+                    }
+                    return out;
+                  }
+
+                  // ── YAML (front matter) highlighter ──
+                  function highlightYaml(s) {
+                    var lines = s.split("\n").map(function (line) {
+                      var m = line.match(/^(\s*)([\w.-]+)(\s*:)(.*)$/);
+                      if (m) {
+                        var val = m[4];
+                        val = escHtml(val)
+                          .replace(/^(\s*)(&quot;.*?&quot;|&#39;.*?&#39;)/,
+                                   '$1<span class="sx-st">$2</span>')
+                          .replace(/^(\s*)(\d+\.?\d*)(\s*$)/,
+                                   '$1<span class="sx-num">$2</span>$3')
+                          .replace(/^(\s*)(true|false|null)(\s*$)/,
+                                   '$1<span class="sx-cn">$2</span>$3');
+                        return escHtml(m[1]) +
+                          '<span class="sx-key">' + escHtml(m[2]) + '</span>' +
+                          escHtml(m[3]) + val;
+                      }
+                      var dash = line.match(/^(\s*)-(\s+)(.*)$/);
+                      if (dash) {
+                        return escHtml(dash[1]) + '<span class="sx-fence">-</span>' +
+                          escHtml(dash[2]) + escHtml(dash[3]);
+                      }
+                      return escHtml(line);
+                    });
+                    return lines.join("\n");
+                  }
+
+                  // ── Minimal markdown renderer ──
+                  function renderMarkdown(s) {
+                    // Split off any nested fenced code blocks first.
+                    var parts = [];
+                    var fenceRe = /```([^\n]*)\n([\s\S]*?)```/g;
+                    var last = 0, m;
+                    while ((m = fenceRe.exec(s)) !== null) {
+                      parts.push({ type: "text", value: s.slice(last, m.index) });
+                      parts.push({ type: "code", lang: m[1].trim(), value: m[2] });
+                      last = fenceRe.lastIndex;
+                    }
+                    parts.push({ type: "text", value: s.slice(last) });
+
+                    return parts.map(function (p) {
+                      if (p.type === "code") {
+                        return '<pre class="nb-md-pre"><code>' +
+                          highlightPython(p.value) + '</code></pre>';
+                      }
+                      var e = escHtml(p.value);
+                      // Headings
+                      e = e.replace(/^(#{1,6})[ \t]+([^\n]+)$/gm,
+                        function (mm, hashes, text) {
+                          var lvl = hashes.length;
+                          return '<div class="nb-md-h nb-md-h' + lvl + '">' +
+                            text + '</div>';
+                        });
+                      // Block quotes
+                      e = e.replace(/^>[ \t]?(.*)$/gm,
+                        '<blockquote>$1</blockquote>');
+                      // Bold then italic (bold first to avoid greedy *)
+                      e = e.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+                      e = e.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+                      // Inline code
+                      e = e.replace(/`([^`\n]+)`/g,
+                        '<code class="nb-md-icode">$1</code>');
+                      // Links
+                      e = e.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+                        '<a href="$2" target="_blank" rel="noopener">$1</a>');
+                      // Paragraphs from blank-line groups
+                      e = e.split(/\n{2,}/).map(function (chunk) {
+                        if (!chunk.trim()) return "";
+                        if (/^<(div|blockquote|h\d|pre|ul|ol)/.test(chunk)) return chunk;
+                        return '<p>' + chunk.replace(/\n/g, '<br>') + '</p>';
+                      }).join("\n");
+                      return e;
+                    }).join("");
+                  }
+
+                  // ── Cell-renderer ──
+                  function renderCells(cells) {
+                    var out = ['<div class="nb-view">'];
+                    var codeIdx = 0;
+                    cells.forEach(function (cell) {
+                      if (cell.type === "code") {
+                        codeIdx++;
+                        out.push('<div class="nb-cell nb-cell-code">' +
+                          '<div class="nb-gutter"><span class="nb-tag">In&nbsp;[' +
+                            codeIdx + ']:</span>' +
+                            (cell.lang ? '<span class="nb-lang">' +
+                              escHtml(cell.lang) + '</span>' : '') +
+                          '</div>' +
+                          '<pre class="nb-body"><code>' +
+                            highlightPython(cell.source) + '</code></pre>' +
+                          '</div>');
+                      } else if (cell.type === "markdown") {
+                        out.push('<div class="nb-cell nb-cell-md">' +
+                          '<div class="nb-gutter"><span class="nb-tag">md</span></div>' +
+                          '<div class="nb-body nb-body-md">' +
+                            renderMarkdown(cell.source) + '</div>' +
+                          '</div>');
+                      } else if (cell.type === "yaml") {
+                        out.push('<div class="nb-cell nb-cell-yaml">' +
+                          '<div class="nb-gutter"><span class="nb-tag">yaml</span></div>' +
+                          '<pre class="nb-body"><code>' +
+                            highlightYaml(cell.source) + '</code></pre>' +
+                          '</div>');
+                      } else if (cell.type === "raw") {
+                        out.push('<div class="nb-cell nb-cell-raw">' +
+                          '<div class="nb-gutter"><span class="nb-tag">raw</span></div>' +
+                          '<pre class="nb-body"><code>' +
+                            escHtml(cell.source) + '</code></pre>' +
+                          '</div>');
+                      }
+                    });
+                    out.push('</div>');
+                    return out.join("");
+                  }
+
+                  // ── Parsers ──
+                  function parseQmdToCells(qmd) {
+                    var cells = [];
+                    var rest = qmd;
+                    var fm = rest.match(/^---\n([\s\S]*?)\n---\n?/);
+                    if (fm) {
+                      cells.push({ type: "yaml", source: fm[1] });
+                      rest = rest.slice(fm[0].length);
+                    }
+                    var fenceRe = /```\{?([^\n}]*)\}?\n([\s\S]*?)```[ \t]*\n?/g;
+                    var last = 0, m;
+                    while ((m = fenceRe.exec(rest)) !== null) {
+                      var before = rest.slice(last, m.index);
+                      if (before.trim()) {
+                        cells.push({ type: "markdown", source: before.replace(/^\n+|\n+$/g, "") });
+                      }
+                      var lang = (m[1] || "").replace(/^\{|\}$/g, "").trim() || "code";
+                      cells.push({
+                        type: "code",
+                        lang: lang,
+                        source: m[2].replace(/\n$/, "")
+                      });
+                      last = fenceRe.lastIndex;
+                    }
+                    var trail = rest.slice(last);
+                    if (trail.trim()) {
+                      cells.push({ type: "markdown", source: trail.replace(/^\n+|\n+$/g, "") });
+                    }
+                    return cells;
+                  }
+
+                  function parseIpynbToCells(jsonStr) {
+                    var nb;
+                    try { nb = JSON.parse(jsonStr); }
+                    catch (e) { return [{ type: "raw", source: jsonStr }]; }
+                    var lang = (nb.metadata && nb.metadata.kernelspec &&
+                                nb.metadata.kernelspec.language) || "python";
+                    return (nb.cells || []).map(function (cell) {
+                      var src = Array.isArray(cell.source)
+                        ? cell.source.join("")
+                        : (cell.source || "");
+                      if (cell.cell_type === "markdown") return { type: "markdown", source: src };
+                      if (cell.cell_type === "code") return { type: "code", lang: lang, source: src };
+                      if (cell.cell_type === "raw") return { type: "raw", source: src };
+                      return null;
+                    }).filter(Boolean);
+                  }
+
+                  var sourceModal = null;
+                  var sourceModalFormat = null;
+                  function ensureModal() {
+                    if (sourceModal) return;
+                    sourceModal = document.createElement("div");
+                    sourceModal.className = "source-modal";
+                    sourceModal.innerHTML =
+                      '<div class="source-modal-overlay"></div>' +
+                      '<div class="source-modal-panel">' +
+                        '<header class="source-modal-header">' +
+                          '<h2 class="source-modal-title"></h2>' +
+                          '<div class="source-modal-actions">' +
+                            '<button type="button" class="source-modal-download" ' +
+                              'aria-label="Download source file">' +
+                              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+                              'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+                              'stroke-linejoin="round" aria-hidden="true">' +
+                                '<path d="M14 3v5h5"/>' +
+                                '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>' +
+                                '<line x1="12" y1="12" x2="12" y2="18"/>' +
+                                '<polyline points="9 15 12 18 15 15"/>' +
+                              '</svg>' +
+                              '<span class="source-modal-download-label">Download</span>' +
+                            '</button>' +
+                            '<button type="button" class="source-modal-close" ' +
+                              'aria-label="Close source preview">' +
+                              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ' +
+                              'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+                              'stroke-linejoin="round" aria-hidden="true">' +
+                                '<line x1="6" y1="6" x2="18" y2="18"/>' +
+                                '<line x1="18" y1="6" x2="6" y2="18"/>' +
+                              '</svg>' +
+                            '</button>' +
+                          '</div>' +
+                        '</header>' +
+                        '<div class="source-modal-code"></div>' +
+                      '</div>';
+                    document.body.appendChild(sourceModal);
+                    sourceModal.querySelector(".source-modal-close")
+                      .addEventListener("click", closeSourceModal);
+                    sourceModal.querySelector(".source-modal-overlay")
+                      .addEventListener("click", closeSourceModal);
+                    sourceModal.querySelector(".source-modal-download")
+                      .addEventListener("click", function () {
+                        if (sourceModalFormat) exportAs(sourceModalFormat);
+                      });
+                    document.addEventListener("keydown", function (ev) {
+                      if (ev.key === "Escape" &&
+                          sourceModal && sourceModal.classList.contains("is-open")) {
+                        closeSourceModal();
+                      }
+                    });
+                  }
+                  function openSourceModal(format) {
+                    ensureModal();
+                    sourceModalFormat = format;
+                    var cells;
+                    if (format === "qmd") {
+                      var qmdText = (sourceKind === "qmd") ? sourceText : ipynbToQmd(sourceText);
+                      cells = parseQmdToCells(qmdText);
+                    } else {
+                      var ipynbText = (sourceKind === "ipynb") ? sourceText : qmdToIpynb(sourceText);
+                      cells = parseIpynbToCells(ipynbText);
+                    }
+                    sourceModal.querySelector(".source-modal-title").textContent =
+                      sourceName + "." + format;
+                    sourceModal.querySelector(".source-modal-download-label").textContent =
+                      "Download ." + format;
+                    sourceModal.querySelector(".source-modal-code").innerHTML =
+                      renderCells(cells);
+                    sourceModal.classList.add("is-open");
+                  }
+                  function closeSourceModal() {
+                    if (sourceModal) sourceModal.classList.remove("is-open");
+                  }
                   document.addEventListener("click", function (e) {
                     if (!exportMenu.classList.contains("is-open")) return;
                     if (exportMenu.contains(e.target) || exportBtn.contains(e.target)) return;
