@@ -4838,21 +4838,40 @@ border-radius: 4px;
 
 @media (max-width: 1279.98px) {
 body { font-size: 16px; }
-body .page-columns.page-layout-article,
-body .page-columns {
-grid-template-columns: 1fr !important;
-padding: 0 1.25rem;
+
+body.narrow-toc {
+--toc-col-width: 0px;
 }
-body #quarto-sidebar,
-body .sidebar.sidebar-navigation {
-grid-column: 1 !important;
-position: static;
-max-height: none;
+body.narrow-toc .sidebar.toc-left,
+body.narrow-toc #quarto-sidebar {
+opacity: 0;
+pointer-events: none;
+transform: translateX(-0.5rem);
 }
-body main.content,
-body #quarto-document-content {
-grid-column: 1 !important;
-padding-right: 0;
+body.narrow-toc .toc-peek-zone {
+width: 22px;
+pointer-events: auto;
+}
+
+body.narrow-toc.toc-peek .sidebar.toc-left,
+body.narrow-toc.toc-peek #quarto-sidebar {
+opacity: 1 !important;
+pointer-events: auto !important;
+position: fixed !important;
+top: 1rem !important;
+left: 1.25rem !important;
+width: 17.5rem !important;
+max-height: calc(100vh - 2rem) !important;
+height: auto !important;
+z-index: 40;
+background: var(--c-bg);
+border: 1px solid var(--c-border-soft);
+border-radius: 0.6rem;
+box-shadow: 0 10px 30px -6px rgba(0, 0, 0, 0.45),
+0 0 0 1px color-mix(in srgb, var(--c-accent) 12%, transparent);
+padding: var(--toc-button-zone) 0.75rem 1rem 0.75rem;
+overflow-y: auto;
+transform: translateX(0) !important;
 }
 h1 { font-size: 2rem; }
 h2 { font-size: 1.375rem; }
@@ -6867,6 +6886,18 @@ The interface your user talks to.
       sidebarEl.addEventListener("mouseenter", function () { setPeek(true); });
       sidebarEl.addEventListener("mouseleave", function () { setPeek(false); });
     }
+
+    // ─── Narrow viewport: force TOC into peek-only mode ────────
+    // Below 1280 px the body takes the full width and the TOC is
+    // only accessible via the left-edge peek zone. The class on
+    // <body> triggers the CSS in styles.css (media query block).
+    function applyNarrowToc() {
+      document.body.classList.toggle(
+        "narrow-toc", window.innerWidth < 1280
+      );
+    }
+    applyNarrowToc();
+    window.addEventListener("resize", applyNarrowToc);
 
     if (!toc) return;
 

@@ -1254,6 +1254,18 @@ contributes:
                   sidebarEl.addEventListener("mouseleave", function () { setPeek(false); });
                 }
 
+                // ─── Narrow viewport: force TOC into peek-only mode ────────
+                // Below 1280 px the body takes the full width and the TOC is
+                // only accessible via the left-edge peek zone. The class on
+                // <body> triggers the CSS in styles.css (media query block).
+                function applyNarrowToc() {
+                  document.body.classList.toggle(
+                    "narrow-toc", window.innerWidth < 1280
+                  );
+                }
+                applyNarrowToc();
+                window.addEventListener("resize", applyNarrowToc);
+
                 if (!toc) return;
 
                 // Wrap each TOC link's text in a .toc-label and prepend a .toc-dot.
