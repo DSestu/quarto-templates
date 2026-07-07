@@ -225,6 +225,20 @@ h6::after { opacity: 0.18; }
   to   { background-position: -200% 50%; }
 }
 
+/* Inline code inside headings — the shimmer rule sets `color: transparent`
+   with `background-clip: text` on h1/h2/h3, and the child <code> inherits the
+   transparent colour without inheriting the text-clipped background gradient,
+   so the code text disappears. Force it back to a solid colour and defeat
+   the -webkit-text-fill-color inheritance. */
+h1 code, h2 code, h3 code,
+h1 code:not(.sourceCode), h2 code:not(.sourceCode), h3 code:not(.sourceCode) {
+  color: var(--c-text-bright);
+  -webkit-text-fill-color: var(--c-text-bright);
+  background-clip: border-box;
+  -webkit-background-clip: border-box;
+  background-image: none;
+}
+
 /* ─── Section accordion ──────────────────────────────────────────────────── */
 
 /* Headings that are wired as accordion toggles by the boot script. */
