@@ -1,15 +1,23 @@
-from dsestu_render import front_matter, pick_data, to_ipynb_outputs
+from dsestu_render import pick_data, pop_front_matter, to_ipynb_outputs
 
 PNG = "data:image/png;base64,AAAA"
 
 
-def test_front_matter_reads_comment_block_above_import():
-    src = "# ---\n# title: Report\n# tags: [a, b]\n#\n# ---\nimport marimo\n# ---\n# title: no\n# ---\n"
-    assert front_matter(src) == "title: Report\ntags: [a, b]\n"
+def _md(text):
+    return {"cell_type": "markdown", "metadata": {}, "source": text}
 
 
-def test_front_matter_absent():
-    assert front_matter("import marimo\napp = marimo.App()\n") is None
+def test_front_matter_cell_is_popped_plain_or_fenced():
+    for text in ("---\ntitle: Report\ntags: [a, b]\n---", "\n```yaml\n---\ntitle: Report\ntags: [a, b]\n---\n```\n"):
+        nb = {"cells": [{"cell_type": "code", "source": "x = 1"}, _md(text), _md("# Intro")]}
+        assert pop_front_matter(nb) == "---\ntitle: Report\ntags: [a, b]\n---\n"
+        assert [c["source"] for c in nb["cells"]] == ["x = 1", "# Intro"]
+
+
+def test_front_matter_ignores_regular_markdown():
+    nb = {"cells": [_md("Some text\n\n---\n\nmore text"), _md("```yaml\nkey: v\n```")]}
+    assert pop_front_matter(nb) is None
+    assert len(nb["cells"]) == 2
 
 
 def test_pick_keeps_drawable_html_and_snapshots_widgets():
@@ -35,3 +43,47 @@ def test_outputs_unwrap_bundle_then_console():
         {"output_type": "display_data", "data": {"image/png": "AAAA"}, "metadata": {}},
         {"output_type": "stream", "name": "stdout", "text": "hi\n"},
     ]
+
+
+NOTEBOOK = '''import marimo
+
+app = marimo.App()
+
+
+@app.cell
+def _():
+    import marimo as mo
+    return (mo,)
+
+
+if __name__ == "__main__":
+    app.run()
+'''
+
+
+def test_generic_cell_is_added_and_read_back_by_marimo(tmp_path):
+    import json, subprocess, sys
+    from dsestu_render import add_marimo_front_matter, generic_front_matter
+
+    nb_path = tmp_path / "private_networks_france.py"
+    nb_path.write_text(NOTEBOOK)
+    meta = generic_front_matter(nb_path)
+    assert 'title: "Private networks france"' in meta
+    add_marimo_front_matter(nb_path, meta)
+    out = tmp_path / "out.ipynb"
+    subprocess.run([sys.executable, "-m", "marimo", "export", "ipynb", str(nb_path), "--sort", "top-down", "-o", str(out)], check=True, capture_output=True)
+    nb = json.loads(out.read_text())
+    assert pop_front_matter(nb) == meta
+
+
+def test_ipynb_gets_raw_cell_once(tmp_path):
+    import json
+    from dsestu_render import ensure_ipynb_front_matter
+
+    path = tmp_path / "report.ipynb"
+    path.write_text(json.dumps({"nbformat": 4, "nbformat_minor": 5, "metadata": {}, "cells": [{"id": "a", "cell_type": "markdown", "metadata": {}, "source": "hi"}]}))
+    ensure_ipynb_front_matter(path)
+    ensure_ipynb_front_matter(path)
+    cells = json.loads(path.read_text())["cells"]
+    assert [c["cell_type"] for c in cells] == ["raw", "markdown"]
+    assert cells[0]["id"] == "front-matter" and "".join(cells[0]["source"]).startswith('---\ntitle: "Report"')

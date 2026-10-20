@@ -46,16 +46,17 @@ This writes `notebook.html` next to the source as a single self-contained file. 
 auto_instantiate = false
 ```
 
-**Title, description, tags…** In `.ipynb`, use the raw first cell as usual (see [below](#in-a-jupyter-notebook-ipynb)). In a marimo notebook, put a commented YAML block above `import marimo`. marimo keeps it when it saves:
+**Title, description, tags…** In `.ipynb`, use the raw first cell as usual (see [below](#in-a-jupyter-notebook-ipynb)). In a marimo notebook, add a markdown cell that contains only the same YAML block. It stays visible and editable in the editor, and `dsestu-render` turns it into the front matter and leaves it out of the page. The ```` ```yaml ```` fence is optional; it makes the editor show the block as highlighted YAML. The `quarto_init_marimo` snippet in [`vscode-snippet.json`](vscode-snippet.json) gives you the full block. If a notebook has no front-matter cell, `dsestu-render` says so and adds a generic one to the source file: a markdown cell at the top of a marimo notebook, or a raw first cell in an `.ipynb`. It contains a title from the file name, today's date, and commented-out `author`, `description` and `categories` lines to fill in.
 
-```python
-# ---
-# title: My analysis
-# description: Weekly numbers
-# categories: [sales, weekly]
-# ---
-import marimo
+````markdown
+```yaml
+---
+title: My analysis
+description: Weekly numbers
+categories: [sales, weekly]
+---
 ```
+````
 
 Any other option is passed to `quarto render` and overrides the file: `-M title:"Q3 report"`, `--metadata-file meta.yml`, and so on.
 

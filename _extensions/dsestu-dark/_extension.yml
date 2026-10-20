@@ -29,6 +29,9 @@ contributes:
       html-math-method: katex
 
       code-tools: false
+      # the collapse-all button and fold groups only act on Quarto's code-fold <details>
+      code-fold: show
+      code-summary: "Code"
       code-copy: hover
       code-link: true
       code-line-numbers: false

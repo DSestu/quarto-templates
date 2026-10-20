@@ -42,13 +42,53 @@ def session_file(notebook: Path) -> Path:
     return notebook.parent / "__marimo__" / "session" / f"{notebook.name}.json"
 
 
-def front_matter(source: str) -> str | None:
-    """YAML from a `# ---` ... `# ---` comment block above `import marimo`."""
-    header = source.split("import marimo", 1)[0]
-    m = re.search(r"^# ---[ \t]*\n(.*?)^# ---[ \t]*$", header, re.M | re.S)
-    if not m:
-        return None
-    return "\n".join(re.sub(r"^# ?", "", line) for line in m[1].splitlines())
+# A markdown cell that is only a `---` YAML block, optionally inside a ```yaml fence so the editor highlights it.
+FRONT_MATTER = re.compile(r"\A(?:```ya?ml[ \t]*\n)?(---[ \t]*\n.*?\n---)[ \t]*(?:\n```)?\Z", re.S)
+
+
+def pop_front_matter(nb: dict) -> str | None:
+    """Remove the first front-matter markdown cell and return its `---` block."""
+    for i, cell in enumerate(nb["cells"]):
+        if cell["cell_type"] == "markdown":
+            m = FRONT_MATTER.match("".join(cell["source"]).strip())
+            if m:
+                del nb["cells"][i]
+                return m[1] + "\n"
+    return None
+
+
+def generic_front_matter(source: Path) -> str:
+    # top-level keys so the block works with any --to format; the rest stay commented until filled in
+    title = source.stem.replace("_", " ").replace("-", " ").strip().capitalize()
+    return (
+        f"---\ntitle: {json.dumps(title)}\ndate: today\ndate-format: \"YYYY.MM.DD\"\n"
+        "# author: ''\n# description: ''\n# categories: []\n---\n"
+    )
+
+
+def add_marimo_front_matter(notebook: Path, meta: str) -> None:
+    """Insert `meta` as a markdown cell before the notebook's first cell."""
+    src = notebook.read_text(encoding="utf-8")
+    first = re.search(r"^@app\.", src, re.M)
+    if first is None:
+        raise RenderError(f"no marimo cells found in {notebook.name}")
+    body = "".join(f"    {line}" if line.strip() else line for line in f"```yaml\n{meta}```\n".splitlines(keepends=True))
+    cell = f'@app.cell(hide_code=True)\ndef _(mo):\n    mo.md(r"""\n{body}    """)\n    return\n\n\n'
+    notebook.write_text(src[: first.start()] + cell + src[first.start() :], encoding="utf-8")
+
+
+def ensure_ipynb_front_matter(notebook: Path) -> None:
+    """Add a raw front-matter first cell to the .ipynb if it has none."""
+    nb = json.loads(notebook.read_text(encoding="utf-8"))
+    first = nb["cells"][0] if nb.get("cells") else None
+    if first and first["cell_type"] == "raw" and "".join(first["source"]).lstrip().startswith("---"):
+        return
+    cell = {"cell_type": "raw", "metadata": {}, "source": generic_front_matter(notebook).splitlines(keepends=True)}
+    if any("id" in c for c in nb["cells"]):  # nbformat >= 4.5 requires cell ids
+        cell["id"] = "front-matter"
+    nb["cells"].insert(0, cell)
+    notebook.write_text(json.dumps(nb, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"note: {notebook.name} had no front-matter raw cell; added a generic one at the top", file=sys.stderr)
 
 
 def _strip_data_uri(value: str) -> str:
@@ -121,11 +161,13 @@ def marimo_to_ipynb(notebook: Path, workdir: Path) -> dict:
     if stale:
         print(f"warning: {stale} cell(s) of {notebook.name} have no saved output; run them in marimo", file=sys.stderr)
 
-    meta = front_matter(notebook.read_text(encoding="utf-8"))
-    if meta:
-        # Quarto only treats a raw cell as front matter when its source is a list of lines
-        source = f"---\n{meta}\n---\n".splitlines(keepends=True)
-        nb["cells"].insert(0, {"cell_type": "raw", "metadata": {}, "source": source})
+    meta = pop_front_matter(nb)
+    if meta is None:
+        meta = generic_front_matter(notebook)
+        add_marimo_front_matter(notebook, meta)
+        print(f"note: {notebook.name} had no front-matter cell; added a generic one at the top (edit it in marimo)", file=sys.stderr)
+    # Quarto only treats a raw cell as front matter when its source is a list of lines
+    nb["cells"].insert(0, {"cell_type": "raw", "metadata": {}, "source": meta.splitlines(keepends=True)})
     return nb
 
 
@@ -144,6 +186,7 @@ def render(source: Path, output: Path, fmt: str, quarto_args: list[str]) -> None
         if source.suffix == ".py":
             build.write_text(json.dumps(marimo_to_ipynb(source, tmp)), encoding="utf-8")
         else:
+            ensure_ipynb_front_matter(source)
             shutil.copyfile(source, build)
         cmd = ["quarto", "render", build.name, "--to", fmt, "-M", "embed-resources:true", *quarto_args]
         done = subprocess.run(cmd, cwd=tmp, capture_output=True, text=True)
