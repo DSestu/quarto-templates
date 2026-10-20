@@ -1782,22 +1782,47 @@ details.code-fold.fold-group-last > summary {
   display: none;
 }
 
-/* Count badge on the first summary of a fused group (≥2 collapsed) */
+/* Count badge on the first summary of a fused group (≥2 collapsed).
+   Positioned at the RIGHT edge of the summary via absolute placement so it
+   never sits near the top-left toolbar buttons regardless of where the code
+   cell lives on the page. */
 details.code-fold.fold-group-first > summary {
   position: relative;
+  padding-right: 2.5rem;
 }
 
 details.code-fold.fold-group-first > summary::after {
   content: "+" attr(data-fold-count);
-  margin-left: 0.4rem;
+  /* Reset every property the generic hover-shimmer ::after set, otherwise
+     `inset: 0` makes the badge stretch across the whole summary and
+     `opacity: 0` hides it until hover. */
+  inset: auto;
+  top: 50%;
+  right: 0.4rem;
+  bottom: auto;
+  left: auto;
+  transform: translateY(-50%);
+  background: var(--c-accent-soft);
+  background-image: none;
+  background-size: auto;
+  background-position: 0 0;
+  opacity: 1;
   padding: 0.05rem 0.4rem;
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.06em;
+  line-height: 1.1;
   color: var(--c-accent);
-  background: var(--c-accent-soft);
   border-radius: 0.4rem;
   border: 1px solid color-mix(in srgb, var(--c-accent) 28%, transparent);
+  z-index: 2;
+}
+
+/* Suppress the hover-shimmer on the fused first summary — the badge already
+   occupies the ::after slot; the shimmer would fight it. */
+details.code-fold.fold-group-first > summary:hover::after {
+  opacity: 1;
+  background-position: 0 0;
 }
 
 /* ─── Code-fold toggle button ────────────────────────────────────────────── */
@@ -2445,6 +2470,66 @@ kbd {
 /* ─── Jupyter cell outputs ───────────────────────────────────────────────── */
 
 .cell { margin: 1.75em 0; }
+
+/* Cells that hold a fold-closed code block stack directly against each
+   other — the folded summary is the whole visible content, and any margin
+   around it would accumulate per cell. */
+.cell:has(> details.code-fold.fold-closed) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* The details element inside the cell — remove any browser-default gap. */
+.cell > details.code-fold {
+  margin: 0;
+  padding: 0;
+}
+
+/* Between two folded cells: a hairline 2px gap so summaries are visually
+   distinct without accumulating rhythm. */
+.cell:has(> details.code-fold.fold-closed) + .cell:has(> details.code-fold.fold-closed) {
+  margin-top: 2px !important;
+}
+
+/* Adjacent-cell tightening (any-state): whichever shape Quarto emits
+   — direct sibling or scaffold-wrapped — the incoming top margin is
+   zeroed and the outgoing bottom margin shrinks to 0.5em. */
+.cell + .cell,
+.code-copy-outer-scaffold + .code-copy-outer-scaffold > .cell,
+.code-copy-outer-scaffold + .cell,
+.cell + .code-copy-outer-scaffold > .cell {
+  margin-top: 0 !important;
+}
+.cell:has(+ .cell),
+.code-copy-outer-scaffold:has(> .cell):has(+ .code-copy-outer-scaffold) > .cell,
+.code-copy-outer-scaffold:has(> .cell):has(+ .cell) > .cell,
+.cell:has(+ .code-copy-outer-scaffold > .cell) {
+  margin-bottom: 0.5em !important;
+}
+.code-copy-outer-scaffold + .code-copy-outer-scaffold {
+  margin-top: 0 !important;
+}
+.code-copy-outer-scaffold:has(+ .code-copy-outer-scaffold),
+.code-copy-outer-scaffold:has(+ .cell) {
+  margin-bottom: 0 !important;
+}
+
+/* Inside a folded cell, the cell-output's own top margin is another source
+   of accumulating space between consecutive fold-closed blocks. Tighten it. */
+.cell:has(> details.code-fold.fold-closed) > .cell-output,
+.cell:has(> details.code-fold.fold-closed) > .cell-output-display,
+.cell:has(> details.code-fold.fold-closed) > .cell-output-stdout,
+.cell:has(> details.code-fold.fold-closed) > .cell-output-stderr {
+  margin-top: 0.25em !important;
+}
+
+/* Fold-closed summary's own bottom margin (from the base rule) must be
+   zero — with !important so no other rule can reinstate it. */
+details.code-fold.fold-closed > summary {
+  margin-bottom: 0 !important;
+}
 
 .cell-output {
   border-radius: 0.5rem;
