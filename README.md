@@ -28,6 +28,48 @@ quarto render examples/dsestu-dark/template.qmd
 
 ---
 
+## Render a marimo or Jupyter notebook in one command
+
+```bash
+uvx --from git+https://github.com/DSestu/quarto-templates dsestu-render notebook.py           # marimo
+uvx --from git+https://github.com/DSestu/quarto-templates dsestu-render notebook.ipynb        # Jupyter
+uvx --from git+https://github.com/DSestu/quarto-templates dsestu-render notebook.py --watch   # live preview
+```
+
+This writes `notebook.html` next to the source as a single self-contained file. You only need [uv](https://docs.astral.sh/uv/) and [Quarto](https://quarto.org) on your `PATH`. No `quarto add`, no `_quarto.yml`, no raw cell; the templates ship inside the command. For a private repo, use `git+ssh://git@github.com/DSestu/quarto-templates`.
+
+**Nothing is executed.** `.ipynb` files render from their stored outputs. marimo notebooks render from the outputs the marimo editor saved in `__marimo__/session/`, so plotly figures, altair charts, and tables stay interactive. Widgets like sliders appear as marimo's snapshot of them. marimo only saves those outputs when autorun on startup is off. Turn it off once per project, then run the notebook in the editor as usual:
+
+```toml
+# pyproject.toml (or marimo Settings > Runtime > On startup: lazy)
+[tool.marimo.runtime]
+auto_instantiate = false
+```
+
+**Title, description, tags…** In `.ipynb`, use the raw first cell as usual (see [below](#in-a-jupyter-notebook-ipynb)). In a marimo notebook, put a commented YAML block above `import marimo`. marimo keeps it when it saves:
+
+```python
+# ---
+# title: My analysis
+# description: Weekly numbers
+# categories: [sales, weekly]
+# ---
+import marimo
+```
+
+Any other option is passed to `quarto render` and overrides the file: `-M title:"Q3 report"`, `--metadata-file meta.yml`, and so on.
+
+| Option | Effect |
+|--------|--------|
+| `-w`, `--watch` | Re-render whenever the notebook (or its saved marimo outputs) changes, serve it at `http://127.0.0.1:4848/`, and live-reload the browser at the same scroll position. |
+| `-o PATH` | Output file (default: `<notebook>.html` next to the source). |
+| `--to FORMAT` | Template format string (default: `dsestu-dark-html`). |
+| `--port N`, `--no-open` | Live-preview port, and don't open a browser. |
+
+Installed the extensions with `quarto add` and rendering yourself? `<marimo-plotly>` and `<marimo-table>` outputs (from `marimo export ipynb --include-outputs`) are drawn by the template too.
+
+---
+
 ## Use it in another project
 
 Each template ships as a Quarto **format extension**. Install once per project, then reference it by its format string (see table above) from any `.qmd` or `.ipynb`.
@@ -273,7 +315,11 @@ quarto-templates/
 │   └── dsestu-dark/                ← canonical extension (this is what `quarto add` pulls)
 │       ├── _extension.yml          ← format declaration & defaults
 │       ├── theme.scss              ← SCSS variables + CSS custom properties
-│       └── styles.css              ← design rules
+│       ├── styles.css              ← design rules
+│       └── marimo-outputs.html     ← draws marimo plotly/table and vega outputs without marimo
+├── src/dsestu_render/              ← the `dsestu-render` command (bundles _extensions/ into its wheel)
+├── tests/                          ← `uv run --with pytest pytest tests`
+├── pyproject.toml
 ├── examples/
 │   └── dsestu-dark/                ← live demo of the dsestu-dark template
 │       ├── _quarto.yml

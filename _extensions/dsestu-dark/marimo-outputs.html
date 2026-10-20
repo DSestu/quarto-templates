@@ -1,0 +1,81 @@
+<script>
+// Draws marimo's web-component outputs without marimo's frontend:
+// <marimo-plotly> and <marimo-table> (marimo outputs), <dsestu-vega> (written by dsestu-render).
+(function () {
+  "use strict";
+
+  var loaded = {}, pending = 0, amd;
+  // Quarto loads require.js for notebooks; hide define() until every CDN bundle has set its global.
+  function load(src) {
+    return loaded[src] || (loaded[src] = new Promise(function (resolve, reject) {
+      if (pending++ === 0) { amd = window.define; window.define = undefined; }
+      function done() { if (--pending === 0) window.define = amd; }
+      var s = document.createElement("script");
+      s.src = src;
+      s.onload = function () { done(); resolve(); };
+      s.onerror = function () { done(); reject(new Error("failed to load " + src)); };
+      document.head.appendChild(s);
+    }));
+  }
+  function loadAll(srcs) {
+    return srcs.reduce(function (p, src) { return p.then(function () { return load(src); }); }, Promise.resolve());
+  }
+  // marimo double-encodes some attributes (a JSON string holding JSON).
+  function attr(el, name) {
+    var v = JSON.parse(el.getAttribute(name));
+    return typeof v === "string" ? JSON.parse(v) : v;
+  }
+  function define(tag, render) {
+    if (customElements.get(tag)) return;
+    customElements.define(tag, class extends HTMLElement {
+      connectedCallback() {
+        if (this.dataset.drawn) return;
+        this.dataset.drawn = "1";
+        this.style.display = "block";
+        try { render(this); } catch (e) { console.error(tag, e); }
+      }
+    });
+  }
+
+  define("marimo-plotly", function (el) {
+    var fig = attr(el, "data-figure");
+    var config = el.hasAttribute("data-config") ? attr(el, "data-config") : {};
+    load("https://cdn.plot.ly/plotly-2.35.2.min.js").then(function () {
+      window.Plotly.newPlot(el, fig.data, fig.layout, Object.assign({ responsive: true }, config));
+    });
+  });
+
+  define("dsestu-vega", function (el) {
+    var spec = attr(el, "data-spec");
+    loadAll([
+      "https://cdn.jsdelivr.net/npm/vega@6/build/vega.min.js",
+      "https://cdn.jsdelivr.net/npm/vega-lite@6/build/vega-lite.min.js",
+      "https://cdn.jsdelivr.net/npm/vega-embed@7/build/vega-embed.min.js"
+    ]).then(function () { return window.vegaEmbed(el, spec, { actions: false }); });
+  });
+
+  define("marimo-table", function (el) {
+    var rows = attr(el, "data-data");
+    if (!Array.isArray(rows)) return;
+    var types = el.hasAttribute("data-field-types") ? attr(el, "data-field-types") : [];
+    var cols = types.length ? types.map(function (t) { return t[0]; }) : Object.keys(rows[0] || {});
+    var table = document.createElement("table");
+    table.className = "table table-sm";
+    var head = table.createTHead().insertRow();
+    cols.forEach(function (c) { head.appendChild(document.createElement("th")).textContent = c; });
+    var body = table.createTBody();
+    rows.forEach(function (r) {
+      var tr = body.insertRow();
+      cols.forEach(function (c) {
+        var v = r[c];
+        tr.insertCell().textContent = v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : v;
+      });
+    });
+    el.replaceChildren(table);
+    var total = el.hasAttribute("data-total-rows") ? attr(el, "data-total-rows") : rows.length;
+    if (typeof total === "number" && total > rows.length) {
+      el.appendChild(document.createElement("p")).textContent = "Showing " + rows.length + " of " + total + " rows";
+    }
+  });
+})();
+</script>
