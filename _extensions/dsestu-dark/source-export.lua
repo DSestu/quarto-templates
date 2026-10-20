@@ -22,7 +22,7 @@ local function html_escape(s)
 end
 
 local function strip_ipynb_outputs(content)
-  local ok, nb = pcall(quarto.json.decode, content)
+  local ok, nb = pcall(pandoc.json.decode, content, false)
   if not ok or type(nb) ~= "table" or type(nb.cells) ~= "table" then
     return content
   end
@@ -32,7 +32,7 @@ local function strip_ipynb_outputs(content)
       cell.execution_count = nil
     end
   end
-  local ok2, encoded = pcall(quarto.json.encode, nb)
+  local ok2, encoded = pcall(pandoc.json.encode, nb)
   if ok2 then return encoded end
   return content
 end
