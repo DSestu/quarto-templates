@@ -1,0 +1,22 @@
+# Front matter
+
+The YAML block at the top of a document sets its title, date, author and description.
+
+## In a `.qmd`
+
+```yaml
+---
+title: "Station coverage"
+date: today
+date-format: "YYYY.MM.DD"
+author: "David Sestu"
+---
+```
+
+## In a marimo notebook
+
+Add a markdown cell that holds only the YAML block. It stays editable in the marimo editor, and the renderer lifts it into the front matter and leaves it out of the page. The ```` ```yaml ```` fence is optional.
+
+## When it is missing
+
+The renderer adds a generic block to the source file: a title from the file name, today's date, and commented-out `author`, `description` and `categories` lines to fill in.

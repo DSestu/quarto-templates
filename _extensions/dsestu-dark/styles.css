@@ -261,7 +261,7 @@ section.level3 > h3.section-toggle {
   border-radius: 0.3rem;
   box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.5);
   font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 0.6rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -491,6 +491,24 @@ a:focus-visible {
   border-radius: 2px;
 }
 
+/* Skip link: off-screen until focused, then a small tab over the toolbar row */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  z-index: 2000;
+  padding: 0.4rem 0.8rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.375rem;
+  color: var(--c-text-bright);
+  font-size: 0.875rem;
+  text-decoration: none;
+  transform: translate(-50%, -200%);
+}
+.skip-link:focus { transform: translate(-50%, 0); }
+#quarto-document-content:focus { outline: none; }
+
 /* ─── Code: inline + blocks ──────────────────────────────────────────────── */
 
 code:not(pre code),
@@ -549,7 +567,7 @@ div.sourceCode::before {
   top: 0.8rem;
   right: 3rem;
   font-family: "Geist Mono", monospace;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -803,7 +821,7 @@ marimo-table .dt-sort {
   cursor: pointer;
 }
 marimo-table .dt-sort:hover { color: var(--c-text); }
-marimo-table .dt-type { display: block; text-transform: none; letter-spacing: 0; color: var(--c-text-faint); }
+marimo-table .dt-type { display: block; text-transform: none; letter-spacing: 0; color: var(--c-text-muted); }
 marimo-table th[aria-sort="ascending"] .dt-sort::after { content: " ↑"; color: var(--c-accent); }
 marimo-table th[aria-sort="descending"] .dt-sort::after { content: " ↓"; color: var(--c-accent); }
 marimo-table tbody td { padding: 0.4em 0.9em; white-space: nowrap; }
@@ -1113,7 +1131,7 @@ div.callout.callout-style-simple,
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--c-text-faint);
+  color: var(--c-text-muted);
   width: 100%;
 }
 
@@ -1320,10 +1338,10 @@ nav#TOC > h2#toc-title,
 .quarto-toc-header {
   font-family: "Geist Mono", ui-monospace, monospace;
   font-weight: 500;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--c-text-faint);
+  color: var(--c-text-muted);
   margin: 0 0 1rem 0;
   padding: 0;
 }
@@ -1365,7 +1383,7 @@ nav#TOC ul ul a,
 nav[role="doc-toc"] ul ul a {
   font-size: 0.8125rem;
   font-weight: 400;
-  color: var(--c-text-faint);
+  color: var(--c-text-muted);
 }
 
 /* Dot — absolute-positioned in the link's left rail. Vertically pinned to the
@@ -1860,7 +1878,7 @@ details.code-fold.fold-group-first > summary::after {
   background-position: 0 0;
   opacity: 1;
   padding: 0.05rem 0.4rem;
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   line-height: 1.1;
@@ -1896,7 +1914,7 @@ details.code-fold.fold-group-first > summary:hover::after {
   color: var(--c-text-muted);
   cursor: pointer;
   font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 0.66rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2105,7 +2123,7 @@ details.code-fold.fold-group-first > summary:hover::after {
   padding: 0 0.65rem 0 0.55rem;
   gap: 0.4rem;
   font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 0.66rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2176,7 +2194,7 @@ details.code-fold.fold-group-first > summary:hover::after {
 }
 .source-modal-code .nb-tag {
   font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   color: var(--c-text-faint);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2186,7 +2204,7 @@ details.code-fold.fold-group-first > summary:hover::after {
 .source-modal-code .nb-cell-yaml .nb-tag { color: var(--c-accent); }
 .source-modal-code .nb-lang {
   font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 0.6rem;
+  font-size: 0.6875rem;
   color: var(--c-text-muted);
 }
 
@@ -2353,7 +2371,7 @@ body.code-folded .code-fold-toggle .fold-icon-expand   { opacity: 1; transform: 
   white-space: nowrap;
   padding: 0.3rem 0.55rem;
   font-family: "Geist Mono", ui-monospace, monospace;
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2379,6 +2397,14 @@ body.code-folded .code-fold-toggle .fold-icon-expand   { opacity: 1; transform: 
   opacity: 1;
   transform: translate(-50%, 0);
 }
+
+/* The contents button sits at the window's left edge: anchor its tooltip there instead of centring it */
+.toc-toggle[data-shortcut]::after { left: 0; transform: translate(0, -4px); }
+.toc-toggle[data-shortcut]:hover::after,
+.toc-toggle[data-shortcut]:focus-visible::after { transform: translate(0, 0); }
+
+/* Title meta (author, date) at the smallest label size, not shrunk further */
+#title-block-header .quarto-title-meta-contents p { font-size: 0.6875rem; }
 
 /* ─── Global code-folded mode ────────────────────────────────────────────── */
 
@@ -2984,6 +3010,299 @@ body.has-fullscreen-plot { overflow: hidden; }
   border-radius: 4px;
 }
 *::-webkit-scrollbar-thumb:hover { background: var(--c-text-faint); }
+
+/* ─── Book: one contents list (built by book-nav.html) ────────────────────── */
+
+body.dsestu-book { --toc-col-width: 17rem; }
+/* Hidden or narrow states still collapse the column (these share specificity with the line above) */
+body.dsestu-book.toc-hidden,
+body.dsestu-book.narrow-toc { --toc-col-width: 0px; }
+body.dsestu-book.toc-hidden .page-columns,
+body.dsestu-book.narrow-toc .page-columns { column-gap: 0; }
+/* Quarto pads content for its floating sidebar; the contents list is an overlay below 1280px */
+body.dsestu-book.narrow-toc main.content { padding-left: 0 !important; padding-right: 0 !important; }
+
+/* Quarto's mobile header (sidebar toggle, breadcrumb, search) follows the page theme */
+body.dsestu-book #quarto-header,
+body.dsestu-book #quarto-header .quarto-secondary-nav {
+  background: var(--c-bg);
+  color: var(--c-text);
+  border-bottom: 1px solid var(--c-border-soft);
+  box-shadow: none;
+}
+body.dsestu-book #quarto-header .quarto-secondary-nav .breadcrumb,
+body.dsestu-book #quarto-header .quarto-secondary-nav a,
+body.dsestu-book #quarto-header .quarto-btn-toggle,
+body.dsestu-book #quarto-header .bi { color: var(--c-text-muted); }
+
+body.dsestu-book #quarto-sidebar {
+  background: transparent;
+  overflow: hidden !important;
+  padding-right: 0;
+}
+.book-nav { display: flex; height: 100%; }
+
+/* Column */
+.book-column {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 0.1rem 0.75rem 2rem 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-border-strong) transparent;
+}
+.book-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  color: var(--c-text-bright);
+  text-decoration: none;
+  margin: 0.55rem 0 0.9rem;
+}
+.book-name:hover { color: var(--c-accent); }
+.book-search { position: relative; margin-bottom: 1.5rem; }
+.book-search kbd {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 0.6875rem;
+}
+.book-search:focus-within kbd { display: none; }
+@media (hover: none) { .book-search kbd { display: none; } }
+.book-search .aa-Form {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.375rem;
+  box-shadow: none;
+}
+.book-search .aa-Form:focus-within { border-color: var(--c-accent); box-shadow: 0 0 0 3px var(--c-accent-soft); }
+.book-search .aa-Input { color: var(--c-text); font-size: 0.8125rem; }
+#quarto-sidebar .book-search .aa-Input::placeholder { color: var(--c-text-muted) !important; opacity: 1; }
+
+/* Quarto compiles its search and TOC colours from the dark SCSS palette; route them through the theme tokens */
+.aa-Autocomplete .aa-Form .aa-InputWrapper .aa-Input,
+.aa-DetachedFormContainer .aa-Form .aa-InputWrapper .aa-Input { color: var(--c-text); }
+.aa-DetachedOverlay .aa-Panel,
+#quarto-search-results .aa-Panel {
+  background-color: var(--c-bg);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
+}
+#quarto-search-results .aa-Panel .aa-Item,
+.aa-DetachedOverlay .aa-Panel .aa-Item { color: var(--c-text); }
+.sidebar nav[role="doc-toc"] ul > li > a.active,
+.sidebar nav[role="doc-toc"] ul > li > ul > li > a.active { color: var(--c-accent) !important; }
+/* every search row state is coloured by Quarto with long selectors; !important keeps the theme tokens in charge */
+:is(#quarto-search-results, .aa-DetachedOverlay) .search-result-header {
+  background-color: var(--c-surface) !important;
+  color: var(--c-text-muted) !important;
+}
+:is(#quarto-search-results, .aa-DetachedOverlay) li.aa-Item .search-item {
+  background-color: var(--c-bg) !important;
+  border-color: var(--c-border-soft) !important;
+  color: var(--c-text) !important;
+}
+:is(#quarto-search-results, .aa-DetachedOverlay) li.aa-Item .search-item :not(mark) {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+:is(#quarto-search-results, .aa-DetachedOverlay) li.aa-Item .search-item .search-result-title { color: var(--c-text-bright) !important; }
+/* selected result: a tint and an amber title, not a solid amber block */
+:is(#quarto-search-results, .aa-DetachedOverlay) li.aa-Item[aria-selected="true"] .search-item { background-color: var(--c-accent-soft) !important; }
+:is(#quarto-search-results, .aa-DetachedOverlay) li.aa-Item[aria-selected="true"] .search-item .search-result-title { color: var(--c-accent) !important; }
+:is(#quarto-search-results, .aa-DetachedOverlay) li.aa-Item .search-item mark.search-match {
+  background-color: var(--c-accent-soft) !important;
+  color: var(--c-text-bright) !important;
+  padding: 0 0.1em;
+  border-radius: 2px;
+}
+
+/* Parts: small group headings over their chapters */
+.book-part + .book-part { margin-top: 1.1rem; }
+.book-part-title {
+  display: block;
+  margin: 0 0 0.35rem;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--c-text-muted);
+  text-decoration: none;
+}
+a.book-part-title:hover { color: var(--c-accent); }
+
+.book-chapters { list-style: none; margin: 0; padding: 0; }
+.book-chapters > li { margin: 0; }
+.book-chapter {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.3rem 0;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: var(--c-text-muted);
+  text-decoration: none;
+}
+.book-chapter:hover { color: var(--c-text); }
+.book-chapter-num {
+  flex: 0 0 1.25rem;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text-muted);
+}
+.book-chapter[aria-current="page"] { color: var(--c-accent); font-weight: 550; }
+.book-chapter[aria-current="page"] .book-chapter-num { color: var(--c-accent); }
+.book-flag { display: inline-flex; color: var(--c-accent); }
+.book-chapter .book-flag { margin-left: auto; align-self: center; }
+
+/* The page's own TOC nests under the current chapter */
+.book-chapters > li.is-current > nav#TOC { display: block !important; margin: 0.35rem 0 0.6rem 1.85rem; width: auto; }
+.book-chapters > li.is-current > nav#TOC > h2#toc-title { display: none; }
+
+/* Book chapters carry no date/author row, so one rule under the title is enough */
+body.dsestu-book #title-block-header:not(:has(.quarto-title-meta)) .quarto-title::after { display: none; }
+body.dsestu-book #title-block-header:not(:has(.quarto-title-meta)) { margin-bottom: 2.5rem; }
+
+/* Running head: in the page's head row, level with the toolbar, not over the title */
+body.dsestu-book main.content { position: relative; }
+.book-running-head {
+  position: absolute;
+  top: 0.45rem;
+  left: 0;
+  padding-left: inherit; /* start where the title and body text start */
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--c-text-muted);
+}
+.book-running-sep { color: var(--c-text-muted); }
+.book-running-num { color: var(--c-accent); font-variant-numeric: tabular-nums; }
+.book-running-chapter { color: var(--c-text); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+body.dsestu-book.narrow-toc .book-running-head { left: 11.5rem; } /* clear the fixed toolbar */
+.book-running-open { display: none; }
+body.dsestu-book.narrow-toc .book-running-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+body.dsestu-book.narrow-toc .book-running-open:hover { border-color: var(--c-accent); color: var(--c-text-bright); }
+.book-running-open:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+@media (max-width: 991.98px) { .book-running-head { display: none; } } /* Quarto's header shows it */
+
+/* Continue reading, on the book home */
+.book-continue {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  margin: 1.5rem 0 0; /* last line of the title block, so the block's own rule closes it */
+  padding: 0;
+  color: var(--c-text);
+  text-decoration: none;
+}
+.book-continue:hover { color: var(--c-accent); }
+.book-continue .book-flag { align-self: center; }
+.book-continue-label {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--c-text-muted);
+}
+.book-continue-target { font-weight: 550; }
+
+/* The hover/toggle overlay used below 1280px needs room for numbered chapters */
+body.dsestu-book.toc-peek #quarto-sidebar { width: 18.5rem !important; }
+
+/* Below Quarto's lg breakpoint its header menu button toggles .show on the sidebar: open it as a drawer */
+@media (max-width: 991.98px) {
+  body.dsestu-book #quarto-sidebar.show {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: min(21rem, 100vw) !important;
+    bottom: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    z-index: 1029 !important; /* under Quarto's header (1030), which holds the close button */
+    padding: 3.75rem 0.75rem 1rem !important; /* the drawer starts under the header, whatever its top offset */
+    background: var(--c-bg);
+    border-right: 1px solid var(--c-border-soft);
+    box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.5);
+  }
+  body.dsestu-book #quarto-sidebar.show .book-nav { height: calc(100dvh - 5rem); }
+}
+
+/* Touch: list rows tall enough to tap (about 40px) */
+@media (pointer: coarse) {
+  .book-chapter { padding: 0.6rem 0; }
+  .book-chapters > li.is-current > nav#TOC a { padding-top: 0.45rem; padding-bottom: 0.45rem; }
+}
+/* Below 992px Quarto's header carries search, so the drawer doesn't repeat it */
+@media (max-width: 991.98px) { body.dsestu-book .book-search { display: none; } }
+
+/* Reading measure: running text only (~70 characters); code cells and their outputs keep the full width */
+body.dsestu-book #quarto-document-content :is(p, ul, ol, dl, blockquote, .callout):not(.cell *, .cell-output *, table *) {
+  max-width: 37rem;
+}
+/* below 1280px body text drops to 16px, so the same character count needs less width */
+body.dsestu-book.narrow-toc #quarto-document-content :is(p, ul, ol, dl, blockquote, .callout):not(.cell *, .cell-output *, table *) {
+  max-width: 33rem;
+}
+
+/* Previous / next */
+body.dsestu-book .page-navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin: 4rem 0 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--c-border-soft);
+}
+body.dsestu-book .page-navigation .nav-page { flex: 1 1 0; min-width: 0; }
+body.dsestu-book .page-navigation .nav-page-next { text-align: right; }
+body.dsestu-book .page-navigation .pagination-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  color: var(--c-text-muted);
+  text-decoration: none;
+  font-weight: 550;
+}
+body.dsestu-book .page-navigation .pagination-link:hover { color: var(--c-accent); }
+body.dsestu-book .page-navigation .chapter-number {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--c-text-muted);
+}
+body.dsestu-book .page-navigation .bi { color: var(--c-accent); align-self: center; }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 

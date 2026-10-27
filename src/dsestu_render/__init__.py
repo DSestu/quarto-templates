@@ -149,7 +149,7 @@ def to_ipynb_outputs(cell: dict) -> list[dict]:
     return outputs
 
 
-def marimo_to_ipynb(notebook: Path, workdir: Path) -> dict:
+def marimo_to_ipynb(notebook: Path, workdir: Path, chapter: bool = False) -> dict:
     cache = session_file(notebook)
     if not cache.exists():
         raise RenderError(f"no saved outputs for {notebook.name} ({cache} is missing).\n{AUTORUN_HINT}")
@@ -181,6 +181,8 @@ def marimo_to_ipynb(notebook: Path, workdir: Path) -> dict:
         print(f"warning: {stale} cell(s) of {notebook.name} have no saved output; run them in marimo", file=sys.stderr)
 
     meta = pop_front_matter(nb)
+    if meta is None and chapter:
+        return nb  # a book chapter takes its title from its first heading
     if meta is None:
         meta = generic_front_matter(notebook)
         add_marimo_front_matter(notebook, meta)
@@ -214,6 +216,40 @@ def render(source: Path, output: Path, fmt: str, quarto_args: list[str]) -> None
             raise RenderError(f"quarto render failed:\n{done.stderr or done.stdout}")
         output.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(result, output)
+
+
+def render_project(project: Path, output: Path | None, quarto_args: list[str]) -> Path:
+    """Render a Quarto book or website whose chapters may be marimo notebooks, without executing anything."""
+    if shutil.which("quarto") is None:
+        raise RenderError("quarto is not on PATH; install it from https://quarto.org")
+    config = (project / "_quarto.yml").read_text(encoding="utf-8")
+    # shortcut: output-dir and chapter paths are read with regexes, not a YAML parser; enough for book/website configs
+    m = re.search(r"^\s*output-dir:\s*['\"]?([^'\"\s#]+)", config, re.M)
+    out_name = m[1] if m else "_book" if re.search(r"^\s*type:\s*book\b", config, re.M) else "_site"
+    with tempfile.TemporaryDirectory(prefix="dsestu-render-") as tmp:
+        tmp = Path(tmp) / project.name
+        # follow symlinks: a relative link (e.g. _extensions/dsestu-dark -> ../..) would dangle inside the temp copy
+        shutil.copytree(project, tmp, ignore=shutil.ignore_patterns(out_name, ".quarto", "__marimo__", ".git"),
+                        ignore_dangling_symlinks=True)
+        if not (tmp / "_extensions" / "dsestu-dark").exists():
+            shutil.copytree(EXTENSIONS, tmp / "_extensions", dirs_exist_ok=True)
+        for ref in sorted(set(re.findall(r"[\w./-]+\.py\b", config))):
+            notebook = project / ref
+            if not notebook.is_file() or "marimo.App" not in notebook.read_text(encoding="utf-8"):
+                continue
+            built = (tmp / ref).with_suffix(".ipynb")
+            built.write_text(json.dumps(marimo_to_ipynb(notebook, tmp, chapter=True)), encoding="utf-8")
+            (tmp / ref).unlink()
+            config = re.sub(rf"(?<![\w./-]){re.escape(ref)}\b", ref[:-3] + ".ipynb", config)
+        (tmp / "_quarto.yml").write_text(config, encoding="utf-8")
+        done = subprocess.run(["quarto", "render", "--no-execute", *quarto_args], cwd=tmp, capture_output=True, text=True)
+        result = tmp / out_name
+        if done.returncode != 0 or not result.is_dir():
+            raise RenderError(f"quarto render failed:\n{done.stderr or done.stdout}")
+        output = output or project / out_name
+        shutil.rmtree(output, ignore_errors=True)
+        shutil.copytree(result, output)
+    return output
 
 
 RELOAD_JS = """<script>
@@ -307,11 +343,11 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="dsestu-render",
         allow_abbrev=False,
-        description="Render a marimo (.py) or Jupyter (.ipynb) notebook with a dsestu Quarto template, without executing it.",
+        description="Render a marimo (.py) or Jupyter (.ipynb) notebook, or a Quarto book of them, with a dsestu Quarto template, without executing it.",
         epilog="Other options go to `quarto render`, e.g. -M title:'My report' or --metadata-file meta.yml.",
     )
-    parser.add_argument("source", type=Path, help="notebook.py (marimo) or notebook.ipynb")
-    parser.add_argument("-o", "--output", type=Path, help="output HTML (default: next to the source)")
+    parser.add_argument("source", type=Path, help="notebook.py (marimo), notebook.ipynb, or a book/website directory with a _quarto.yml")
+    parser.add_argument("-o", "--output", type=Path, help="output HTML, or output directory for a book (default: next to the source)")
     parser.add_argument("--to", default="dsestu-dark-html", help="Quarto format (default: %(default)s)")
     parser.add_argument("-w", "--watch", action="store_true", help="re-render on change and live-reload the browser")
     parser.add_argument("--port", type=int, default=4848, help="live preview port (default: %(default)s)")
@@ -319,6 +355,17 @@ def main(argv: list[str] | None = None) -> None:
     args, quarto_args = parser.parse_known_args(argv)
 
     source = args.source.resolve()
+    if source.is_dir():
+        if not (source / "_quarto.yml").is_file():
+            parser.error(f"{args.source} has no _quarto.yml")
+        if args.watch:
+            parser.error("--watch works on single notebooks only, not on a book")
+        try:
+            out = render_project(source, args.output and args.output.resolve(), quarto_args)
+        except RenderError as e:
+            sys.exit(f"error: {e}")
+        print(f"rendered {out}")
+        return
     if source.suffix not in (".py", ".ipynb") or not source.is_file():
         parser.error(f"{args.source} is not a .py or .ipynb file")
     output = (args.output or source.with_suffix(".html")).resolve()

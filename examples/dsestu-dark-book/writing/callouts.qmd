@@ -1,0 +1,32 @@
+# Callouts
+
+Callouts set a note apart from the running text. Use them sparingly; a page of callouts is a page with no emphasis.
+
+## The five kinds
+
+::: {.callout-note}
+A note adds context the reader can skip.
+:::
+
+::: {.callout-tip}
+A tip offers a shortcut.
+:::
+
+::: {.callout-important}
+Important marks something the reader must not miss.
+:::
+
+::: {.callout-warning}
+A warning flags a likely mistake.
+:::
+
+::: {.callout-caution}
+Caution flags something that can lose work or data.
+:::
+
+## Collapsed callouts
+
+::: {.callout-note collapse="true"}
+## Expand for the details
+Long asides can start collapsed.
+:::

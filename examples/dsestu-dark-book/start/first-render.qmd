@@ -1,0 +1,28 @@
+# Your first render
+
+Pick any notebook. The renderer writes a single HTML file next to it.
+
+## Render once
+
+```bash
+dsestu-render analysis.py        # marimo
+dsestu-render analysis.ipynb     # Jupyter
+```
+
+The output is `analysis.html`: one self-contained file with fonts, scripts and data inlined, which you can email or drop on a shared drive.
+
+## Live preview
+
+`--watch` re-renders whenever the notebook or its saved outputs change, and reloads the browser at the same scroll position:
+
+```bash
+dsestu-render analysis.py --watch
+```
+
+## Where the output goes
+
+Use `-o` to write somewhere else, and pass any other flag through to `quarto render`:
+
+```bash
+dsestu-render analysis.py -o reports/2026-10.html -M title:"October review"
+```

@@ -69,6 +69,33 @@ Any other option is passed to `quarto render` and overrides the file: `-M title:
 
 Installed the extensions with `quarto add` and rendering yourself? `<marimo-plotly>` and `<marimo-table>` outputs (from `marimo export ipynb --include-outputs`) are drawn by the template too.
 
+### Books
+
+Point `dsestu-render` at a Quarto [book](https://quarto.org/docs/books/) or website directory instead of a notebook. Chapters can be `.qmd`, `.ipynb`, or marimo `.py` files; marimo chapters render from their saved outputs like single notebooks, and nothing is executed. The site lands in the project's output directory (`_book/` for a book), ready to host on GitHub Pages or any static server.
+
+```bash
+dsestu-render my-book/            # renders my-book/_book/
+dsestu-render my-book/ -o site/   # somewhere else
+```
+
+```yaml
+# my-book/_quarto.yml
+project:
+  type: book
+book:
+  title: "Knowledge"
+  chapters:
+    - index.qmd
+    - part: "Data Science"
+      chapters:
+        - data/outliers.qmd
+        - data/stations.py      # marimo notebook
+format:
+  dsestu-dark-html: default
+```
+
+In a book, the left rail lists every part and chapter, with the current chapter expanded into its sections. A flag marks where you last stopped, and the book's home page offers to continue there. Search with <kbd>Ctrl</kbd>+<kbd>K</kbd>. A marimo chapter takes its title from its first `# heading` unless it has a front-matter cell. `--watch` works on single notebooks only. See [`examples/dsestu-dark-book/`](examples/dsestu-dark-book/) for a demo book.
+
 ---
 
 ## Use it in another project

@@ -1,0 +1,14 @@
+# Preface {.unnumbered}
+
+This book documents the dsestu Quarto templates, and is itself rendered with one of them. The same format renders a single report or a whole book: point a Quarto `book` project at `dsestu-dark-html` and the left rail turns into the book's contents.
+
+## How this book is organised
+
+- **Start** gets a notebook rendered in one command.
+- **Writing** covers what you put in a document: front matter, code, tables, callouts.
+- **Notebooks** explains how marimo and Jupyter notebooks render without being executed.
+- **Reference** lists the format options the template sets.
+
+## Reading it
+
+The left rail lists every part and its chapters; the chapter you are reading lists its sections underneath. The flag marks where you stopped last time, and search finds any heading in the book.

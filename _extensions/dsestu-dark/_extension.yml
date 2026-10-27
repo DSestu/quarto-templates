@@ -14,6 +14,10 @@ contributes:
       filters:
         - source-export.lua
 
+      # Book projects: placeholder of Quarto's search box (book-nav.html moves it into the chapter column)
+      language:
+        search-text-placeholder: "Search the book"
+
       toc: true
       toc-location: left
       toc-depth: 3
@@ -74,6 +78,7 @@ contributes:
 
       include-after-body:
         - file: marimo-outputs.html
+        - file: book-nav.html
         - text: |
             <script>
             (function () {
@@ -95,6 +100,20 @@ contributes:
               })();
 
               ready(function () {
+                // ─── Skip link: first focus stop, jumps past the toolbar and contents ─
+                (function () {
+                  var main = document.getElementById("quarto-document-content");
+                  if (!main) return;
+                  var skip = document.createElement("a");
+                  skip.className = "skip-link";
+                  skip.href = "#quarto-document-content";
+                  skip.textContent = "Skip to content";
+                  main.tabIndex = -1;
+                  // move keyboard focus too: following the anchor alone only scrolls
+                  skip.addEventListener("click", function () { main.focus({ preventScroll: true }); });
+                  document.body.prepend(skip);
+                })();
+
                 // ─── Desync background animations ────────────────────────
                 // Each animated element gets a random negative animation-delay
                 // so cycles drift apart across the page.
@@ -869,7 +888,7 @@ contributes:
                   applyHidden(hidden);
                   try { localStorage.setItem(STORAGE_KEY, hidden ? "1" : "0"); } catch (e) {}
                 });
-                btn.setAttribute("data-shortcut", "Tab");
+                btn.setAttribute("data-shortcut", "T");
                 var tocBtn = btn;
 
                 // ─── Section accordion ───────────────────────────────────
@@ -1039,7 +1058,7 @@ contributes:
 
                 // ─── Keyboard shortcuts ──────────────────────────────────
                 // C = toggle code-fold mode, D = toggle dark/light theme,
-                // Tab = toggle TOC, F = toggle the section under the cursor.
+                // T = toggle TOC, F = toggle the section under the cursor. Tab is left to the browser for focus.
                 // Ignored while typing in a form field.
                 document.addEventListener("keydown", function (e) {
                   if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -1057,7 +1076,7 @@ contributes:
                   } else if (k === "d" || k === "D") {
                     e.preventDefault();
                     themeBtn.click();
-                  } else if (k === "Tab") {
+                  } else if (k === "t" || k === "T") {
                     e.preventDefault();
                     tocBtn.click();
                   } else if (k === "f" || k === "F") {
@@ -1238,9 +1257,10 @@ contributes:
                 peekZone.setAttribute("aria-hidden", "true");
                 document.body.appendChild(peekZone);
 
-                var peekTimer = null;
+                var peekTimer = null, peekPinned = false;
                 function setPeek(on) {
                   if (peekTimer) { clearTimeout(peekTimer); peekTimer = null; }
+                  if (!on && peekPinned) return; // opened by the button: stays until closed
                   if (on) {
                     document.body.classList.add("toc-peek");
                   } else {
@@ -1266,7 +1286,29 @@ contributes:
                   document.body.classList.toggle(
                     "narrow-toc", window.innerWidth < 1280
                   );
+                  if (window.innerWidth >= 1280) setPinned(false);
                 }
+                // Below 1280px the contents button (and T) opens the contents as an overlay,
+                // instead of toggling a hidden state the page is already in.
+                function setPinned(on) {
+                  peekPinned = on;
+                  setPeek(on);
+                  if (!on) document.body.classList.remove("toc-peek");
+                  tocBtn.setAttribute("aria-expanded", String(on || !document.body.classList.contains("narrow-toc") && !document.body.classList.contains("toc-hidden")));
+                }
+                tocBtn.addEventListener("click", function (e) {
+                  if (!document.body.classList.contains("narrow-toc")) return;
+                  e.stopImmediatePropagation(); // skip the wide-screen hide/show toggle
+                  setPinned(!peekPinned);
+                }, true);
+                document.addEventListener("keydown", function (e) {
+                  if (e.key === "Escape" && peekPinned) { setPinned(false); tocBtn.focus(); }
+                });
+                document.addEventListener("click", function (e) {
+                  if (peekPinned && sidebarEl && !sidebarEl.contains(e.target) && !tocBtn.contains(e.target)
+                      && !e.target.closest(".book-running-open")) setPinned(false);
+                });
+                window.dsestuOpenContents = function () { tocBtn.click(); };
                 applyNarrowToc();
                 window.addEventListener("resize", applyNarrowToc);
 

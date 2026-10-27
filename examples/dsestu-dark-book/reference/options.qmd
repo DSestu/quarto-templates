@@ -1,0 +1,29 @@
+# Format options
+
+The template sets these Quarto options. Override any of them in your document or `_quarto.yml`.
+
+## Layout
+
+| Option | Value |
+|--------|-------|
+| `toc-depth` | 3 |
+| `page-layout` | article |
+| `code-fold` | show |
+| `html-math-method` | katex |
+
+## Type
+
+| Option | Value |
+|--------|-------|
+| `mainfont` | Geist |
+| `monofont` | Geist Mono |
+| `fontsize` | 16.5px |
+
+## Keyboard
+
+| Key | Action |
+|-----|--------|
+| <kbd>C</kbd> | Collapse or expand all code |
+| <kbd>D</kbd> | Toggle dark and light theme |
+| <kbd>T</kbd> | Show or hide the contents |
+| <kbd>F</kbd> | Fold the section under the cursor |

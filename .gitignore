@@ -16,3 +16,6 @@ __pycache__/
 .ipynb_checkpoints/
 venv/
 .venv/
+
+# Impeccable design-tool state (briefs, review captures, critiques)
+.impeccable/

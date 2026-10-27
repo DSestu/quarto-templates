@@ -132,9 +132,10 @@ $border-radius-lg: 0.75rem;
   --c-border:       #d4cebd;
   --c-border-soft:  #e2dcca;
   --c-border-strong:#b8b1a0;
-  --c-accent:       #b67817;
-  --c-accent-bright:#9c6710;
-  --c-accent-soft:  #{rgba(#b67817, 0.14)};
+  // amber deep enough to read as text on paper: 5.1:1 on the page, 4.8:1 on surfaces
+  --c-accent:       #8c5c0e;
+  --c-accent-bright:#74490a;
+  --c-accent-soft:  #{rgba(#8c5c0e, 0.14)};
   --c-selection:    #{rgba(#b67817, 0.22)};
 
   --c-callout-note-fg:    #2e64b8;

@@ -1,0 +1,26 @@
+# Code cells
+
+Code is folded by default so the prose leads. Readers open a cell when they want the detail.
+
+## Folding
+
+Press <kbd>C</kbd> to collapse or expand every cell, or click a cell's summary to open just that one. Consecutive folded cells merge into one group with a count.
+
+```python
+import polars as pl
+
+df = pl.read_parquet("stations.parquet")
+active = df.filter(pl.col("last_seen") > pl.lit("2026-09-01"))
+```
+
+## Copying
+
+Hover a block and click the copy button in its corner. The copied text has no prompt characters or line numbers.
+
+## Long lines
+
+Lines never wrap: a long line scrolls inside its block so indentation stays readable.
+
+```python
+summary = active.group_by("network").agg(pl.len().alias("stations"), pl.col("distance_km").median().alias("median_km")).sort("stations", descending=True)
+```
