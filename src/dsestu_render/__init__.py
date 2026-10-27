@@ -95,6 +95,23 @@ def _strip_data_uri(value: str) -> str:
     return value.split(",", 1)[1] if value.startswith("data:") else value
 
 
+def _attr_json(value: str):
+    v = json.loads(html.unescape(value))
+    return json.loads(v) if isinstance(v, str) else v  # marimo double-encodes some attributes
+
+
+def warn_partial_tables(page: str) -> None:
+    """Warn for each marimo table that saved only its first page of rows."""
+    for data, total in re.findall(r"<marimo-table[^>]*?data-data='([^']*)'[^>]*?data-total-rows='([^']*)'", page):
+        saved, total = len(_attr_json(data)), _attr_json(total)
+        if isinstance(total, int) and total > saved:
+            print(
+                f"warning: a table keeps only {saved} of its {total} rows (marimo saves the first page); "
+                "use mo.ui.table(df, pagination=False) to include them all",
+                file=sys.stderr,
+            )
+
+
 def pick_data(data: dict) -> dict:
     """Choose the ipynb mime bundle for one marimo output, preferring what stays interactive."""
     vega = next((k for k in data if k.startswith("application/vnd.vegalite")), None)
@@ -105,6 +122,8 @@ def pick_data(data: dict) -> dict:
     if page is not None:
         tags = set(re.findall(r"<(marimo-[\w-]+)", page))
         lazy_table = "marimo-table" in tags and "data-data='&quot;[" not in page
+        if not lazy_table:
+            warn_partial_tables(page)
         if (tags <= STATIC_TAGS and not lazy_table) or "image/png" not in data:
             return {"text/html": page}
         return {"image/png": _strip_data_uri(data["image/png"])}

@@ -38,7 +38,7 @@ uvx --from git+https://github.com/DSestu/quarto-templates dsestu-render notebook
 
 This writes `notebook.html` next to the source as a single self-contained file. You only need [uv](https://docs.astral.sh/uv/) and [Quarto](https://quarto.org) on your `PATH`. No `quarto add`, no `_quarto.yml`, no raw cell; the templates ship inside the command. For a private repo, use `git+ssh://git@github.com/DSestu/quarto-templates`.
 
-**Nothing is executed.** `.ipynb` files render from their stored outputs. marimo notebooks render from the outputs the marimo editor saved in `__marimo__/session/`, so plotly figures, altair charts, and tables stay interactive. Widgets like sliders appear as marimo's snapshot of them. marimo only saves those outputs when autorun on startup is off. Turn it off once per project, then run the notebook in the editor as usual:
+**Nothing is executed.** `.ipynb` files render from their stored outputs. marimo notebooks render from the outputs the marimo editor saved in `__marimo__/session/`, so plotly figures, altair charts, and tables stay interactive. Dataframes get search, column sorting, paging and CSV download. marimo saves only a table's first page, so `dsestu-render` warns when rows are missing; write `mo.ui.table(df, pagination=False)` to save every row. Widgets like sliders appear as marimo's snapshot of them. marimo only saves those outputs when autorun on startup is off. Turn it off once per project, then run the notebook in the editor as usual:
 
 ```toml
 # pyproject.toml (or marimo Settings > Runtime > On startup: lazy)

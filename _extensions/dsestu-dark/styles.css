@@ -757,6 +757,58 @@ table caption {
   font-feature-settings: "tnum";
 }
 
+/* marimo dataframes (drawn by marimo-outputs.html) */
+marimo-table { margin: 1.25em 0; font-size: 0.875rem; }
+marimo-table .dt-bar,
+marimo-table .dt-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--c-text-muted);
+  font-size: 0.8125rem;
+}
+marimo-table .dt-bar { margin-bottom: 0.5rem; }
+marimo-table .dt-foot { margin-top: 0.5rem; justify-content: flex-end; }
+marimo-table .dt-foot[hidden] { display: none; }
+marimo-table .dt-count { margin-left: auto; }
+marimo-table .dt-search,
+marimo-table .dt-btn {
+  font: inherit;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 0.375rem;
+  padding: 0.25em 0.6em;
+}
+marimo-table .dt-search { min-width: 14rem; }
+marimo-table .dt-btn { cursor: pointer; }
+marimo-table .dt-btn:disabled { opacity: 0.4; cursor: default; }
+marimo-table .dt-search:focus-visible,
+marimo-table .dt-btn:focus-visible,
+marimo-table .dt-sort:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 1px; }
+marimo-table .dt-scroll {
+  overflow: auto;
+  max-height: 36rem;
+  border: 1px solid var(--c-border);
+  border-radius: 0.5rem;
+}
+marimo-table .dt-scroll table { display: table; margin: 0; border: none; border-radius: 0; overflow: visible; }
+marimo-table thead th { position: sticky; top: 0; z-index: 1; padding: 0; }
+marimo-table .dt-sort {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.6em 0.9em;
+  cursor: pointer;
+}
+marimo-table .dt-sort:hover { color: var(--c-text); }
+marimo-table .dt-type { display: block; text-transform: none; letter-spacing: 0; color: var(--c-text-faint); }
+marimo-table th[aria-sort="ascending"] .dt-sort::after { content: " ↑"; color: var(--c-accent); }
+marimo-table th[aria-sort="descending"] .dt-sort::after { content: " ↓"; color: var(--c-accent); }
+marimo-table tbody td { padding: 0.4em 0.9em; white-space: nowrap; }
+marimo-table .dt-num { text-align: right; font-variant-numeric: tabular-nums; }
+
 /* ─── Callouts ───────────────────────────────────────────────────────────── */
 
 div.callout,

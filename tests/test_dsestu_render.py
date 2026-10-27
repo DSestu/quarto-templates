@@ -29,6 +29,14 @@ def test_pick_keeps_drawable_html_and_snapshots_widgets():
     assert pick_data({"text/html": lazy, "image/png": PNG}) == {"image/png": "AAAA"}
 
 
+def test_pick_warns_when_table_saved_only_first_page(capsys):
+    rows = "&quot;[{&#92;&quot;a&#92;&quot;:1},{&#92;&quot;a&#92;&quot;:2}]&quot;"
+    for total, warned in (("500", True), ("2", False)):
+        table = f"<marimo-table data-data='{rows}' data-total-rows='{total}'></marimo-table>"
+        assert pick_data({"text/html": table, "image/png": PNG}) == {"text/html": table}
+        assert ("2 of its 500 rows" in capsys.readouterr().err) is warned
+
+
 def test_pick_turns_vegalite_into_element():
     out = pick_data({"application/vnd.vegalite.v6+json": '{"mark": "point"}', "image/png": PNG})
     assert out == {"text/html": "<dsestu-vega data-spec='{&quot;mark&quot;: &quot;point&quot;}'></dsestu-vega>"}

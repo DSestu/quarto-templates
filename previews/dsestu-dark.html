@@ -3046,6 +3046,57 @@ text-align: right;
 font-feature-settings: "tnum";
 }
 
+marimo-table { margin: 1.25em 0; font-size: 0.875rem; }
+marimo-table .dt-bar,
+marimo-table .dt-foot {
+display: flex;
+align-items: center;
+gap: 0.5rem;
+color: var(--c-text-muted);
+font-size: 0.8125rem;
+}
+marimo-table .dt-bar { margin-bottom: 0.5rem; }
+marimo-table .dt-foot { margin-top: 0.5rem; justify-content: flex-end; }
+marimo-table .dt-foot[hidden] { display: none; }
+marimo-table .dt-count { margin-left: auto; }
+marimo-table .dt-search,
+marimo-table .dt-btn {
+font: inherit;
+color: var(--c-text);
+background: var(--c-surface);
+border: 1px solid var(--c-border);
+border-radius: 0.375rem;
+padding: 0.25em 0.6em;
+}
+marimo-table .dt-search { min-width: 14rem; }
+marimo-table .dt-btn { cursor: pointer; }
+marimo-table .dt-btn:disabled { opacity: 0.4; cursor: default; }
+marimo-table .dt-search:focus-visible,
+marimo-table .dt-btn:focus-visible,
+marimo-table .dt-sort:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 1px; }
+marimo-table .dt-scroll {
+overflow: auto;
+max-height: 36rem;
+border: 1px solid var(--c-border);
+border-radius: 0.5rem;
+}
+marimo-table .dt-scroll table { display: table; margin: 0; border: none; border-radius: 0; overflow: visible; }
+marimo-table thead th { position: sticky; top: 0; z-index: 1; padding: 0; }
+marimo-table .dt-sort {
+all: unset;
+display: block;
+box-sizing: border-box;
+width: 100%;
+padding: 0.6em 0.9em;
+cursor: pointer;
+}
+marimo-table .dt-sort:hover { color: var(--c-text); }
+marimo-table .dt-type { display: block; text-transform: none; letter-spacing: 0; color: var(--c-text-faint); }
+marimo-table th[aria-sort="ascending"] .dt-sort::after { content: " ↑"; color: var(--c-accent); }
+marimo-table th[aria-sort="descending"] .dt-sort::after { content: " ↓"; color: var(--c-accent); }
+marimo-table tbody td { padding: 0.4em 0.9em; white-space: nowrap; }
+marimo-table .dt-num { text-align: right; font-variant-numeric: tabular-nums; }
+
 div.callout,
 .callout {
 border-radius: 0.5rem;
@@ -5865,28 +5916,113 @@ The interface your user talks to.
     ]).then(function () { return window.vegaEmbed(el, spec, { actions: false }); });
   });
 
+  // Search, sort, paging and CSV download over the rows marimo saved (all of them with mo.ui.table(df, pagination=False)).
   define("marimo-table", function (el) {
     var rows = attr(el, "data-data");
     if (!Array.isArray(rows)) return;
-    var types = el.hasAttribute("data-field-types") ? attr(el, "data-field-types") : [];
-    var cols = types.length ? types.map(function (t) { return t[0]; }) : Object.keys(rows[0] || {});
-    var table = document.createElement("table");
-    table.className = "table table-sm";
-    var head = table.createTHead().insertRow();
-    cols.forEach(function (c) { head.appendChild(document.createElement("th")).textContent = c; });
-    var body = table.createTBody();
-    rows.forEach(function (r) {
-      var tr = body.insertRow();
-      cols.forEach(function (c) {
-        var v = r[c];
-        tr.insertCell().textContent = v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : v;
-      });
-    });
-    el.replaceChildren(table);
-    var total = el.hasAttribute("data-total-rows") ? attr(el, "data-total-rows") : rows.length;
-    if (typeof total === "number" && total > rows.length) {
-      el.appendChild(document.createElement("p")).textContent = "Showing " + rows.length + " of " + total + " rows";
+    function opt(name, fallback) {
+      var v = el.hasAttribute(name) ? attr(el, name) : null;
+      return v === null ? fallback : v;
     }
+    var types = opt("data-field-types", []), hidden = opt("data-hidden-columns", []);
+    var cols = (types.length ? types.map(function (t) { return t[0]; }) : Object.keys(rows[0] || {}))
+      .filter(function (c) { return c !== "_marimo_row_id" && hidden.indexOf(c) < 0; });
+    var kind = {}, dtype = {};
+    types.forEach(function (t) { kind[t[0]] = t[1][0]; dtype[t[0]] = t[1][1]; });
+    var total = opt("data-total-rows", rows.length);
+    // without pagination marimo sets page-size to the row count
+    var size = opt("data-pagination", true) ? opt("data-page-size", 10) : 10;
+    var query = "", sortCol = null, sortDir = 1, page = 0, view = rows;
+
+    function h(tag, cls, parent, txt) {
+      var e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (txt !== undefined) e.textContent = txt;
+      if (parent) parent.appendChild(e);
+      return e;
+    }
+    function text(v) { return v === null || v === undefined ? "" : typeof v === "object" ? JSON.stringify(v) : String(v); }
+    function isNum(c) { return kind[c] === "integer" || kind[c] === "number"; }
+    function compare(a, b) {
+      var x = a[sortCol], y = b[sortCol], nx = x === null || x === undefined, ny = y === null || y === undefined;
+      if (nx || ny) return nx - ny; // nulls last in both directions
+      return sortDir * (typeof x === "number" && typeof y === "number" ? x - y : text(x).localeCompare(text(y), undefined, { numeric: true }));
+    }
+    function refresh() {
+      var q = query.toLowerCase();
+      view = q ? rows.filter(function (r) { return cols.some(function (c) { return text(r[c]).toLowerCase().indexOf(q) >= 0; }); }) : rows.slice();
+      if (sortCol !== null) view.sort(compare);
+      page = 0;
+      draw();
+    }
+    function download() {
+      function esc(v) { var s = text(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+      var lines = [cols.map(esc).join(",")].concat(view.map(function (r) { return cols.map(function (c) { return esc(r[c]); }).join(","); }));
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
+      a.download = "table.csv";
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    }
+
+    el.replaceChildren();
+    var bar = h("div", "dt-bar", el);
+    if (opt("data-show-search", true) && rows.length > 1) {
+      var search = h("input", "dt-search", bar);
+      search.type = "search";
+      search.placeholder = "Search";
+      search.setAttribute("aria-label", "Search table");
+      search.addEventListener("input", function () { query = search.value; refresh(); });
+    }
+    var count = h("span", "dt-count", bar);
+    if (opt("data-show-download", true)) h("button", "dt-btn", bar, "CSV").addEventListener("click", download);
+
+    var table = h("table", "table table-sm", h("div", "dt-scroll", el));
+    var head = table.createTHead().insertRow(), body = table.createTBody();
+    var ths = cols.map(function (c) {
+      var th = h("th", isNum(c) ? "dt-num" : "", head);
+      var btn = h("button", "dt-sort", th, c);
+      if (dtype[c]) h("span", "dt-type", btn, dtype[c]);
+      btn.addEventListener("click", function () {
+        // asc -> desc -> unsorted
+        if (sortCol !== c) { sortCol = c; sortDir = 1; } else if (sortDir === 1) sortDir = -1; else sortCol = null;
+        refresh();
+      });
+      return th;
+    });
+
+    var foot = h("div", "dt-foot", el);
+    var prev = h("button", "dt-btn", foot, "‹"), label = h("span", "", foot), next = h("button", "dt-btn", foot, "›");
+    prev.setAttribute("aria-label", "Previous page");
+    next.setAttribute("aria-label", "Next page");
+    prev.addEventListener("click", function () { page--; draw(); });
+    next.addEventListener("click", function () { page++; draw(); });
+    var sizes = [10, 25, 50, 100].concat([10, 25, 50, 100].indexOf(size) < 0 ? [size] : []).sort(function (a, b) { return a - b; });
+    var select = h("select", "dt-btn", foot);
+    select.setAttribute("aria-label", "Rows per page");
+    sizes.forEach(function (s) { h("option", "", select, s + " / page").value = s; });
+    select.value = size;
+    select.addEventListener("change", function () { size = +select.value; page = 0; draw(); });
+    foot.hidden = rows.length <= sizes[0];
+
+    function draw() {
+      var pages = Math.max(1, Math.ceil(view.length / size));
+      body.replaceChildren();
+      view.slice(page * size, (page + 1) * size).forEach(function (r) {
+        var tr = body.insertRow();
+        cols.forEach(function (c) { var td = tr.insertCell(); td.textContent = text(r[c]); if (isNum(c)) td.className = "dt-num"; });
+      });
+      ths.forEach(function (th, i) {
+        th.setAttribute("aria-sort", cols[i] !== sortCol ? "none" : sortDir === 1 ? "ascending" : "descending");
+      });
+      var n = rows.length.toLocaleString();
+      var all = typeof total === "number" && total > rows.length ? "first " + n + " of " + total.toLocaleString() + " rows" : n + " rows";
+      count.textContent = query ? view.length.toLocaleString() + " match in " + all : all;
+      label.textContent = "Page " + (page + 1) + " of " + pages;
+      prev.disabled = page === 0;
+      next.disabled = page >= pages - 1;
+    }
+    draw();
   });
 })();
 </script>
