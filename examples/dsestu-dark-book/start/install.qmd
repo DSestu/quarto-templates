@@ -1,0 +1,35 @@
+# Install
+
+You need two programs on your `PATH`: [uv](https://docs.astral.sh/uv/) to run the renderer, and [Quarto](https://quarto.org) to build the HTML. Nothing else is installed globally.
+
+## Run without installing
+
+`uvx` fetches the renderer into a throwaway environment and runs it:
+
+```bash
+uvx --from git+https://github.com/DSestu/quarto-templates dsestu-render notebook.py
+```
+
+For a private clone, swap the URL for `git+ssh://git@github.com/DSestu/quarto-templates`.
+
+## Install the extension into a project
+
+When you render with `quarto render` yourself, add the format extension once per project:
+
+```bash
+quarto add DSestu/quarto-templates
+```
+
+Then set the format in the document or in `_quarto.yml`:
+
+```yaml
+format:
+  dsestu-dark-html: default
+```
+
+## Check the setup
+
+```bash
+quarto --version   # 1.4 or newer
+uv --version
+```

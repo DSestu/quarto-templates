@@ -1,0 +1,32 @@
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "dsestu templates"
+  author: "David Sestu"
+  date: today
+  date-format: "YYYY.MM.DD"
+  search: true
+  chapters:
+    - index.qmd
+    - part: "Start"
+      chapters:
+        - start/install.qmd
+        - start/first-render.qmd
+    - part: "Writing"
+      chapters:
+        - writing/front-matter.qmd
+        - writing/code-cells.qmd
+        - writing/tables.qmd
+        - writing/callouts.qmd
+    - part: "Notebooks"
+      chapters:
+        - notebooks/marimo.qmd
+        - notebooks/jupyter.qmd
+    - part: "Reference"
+      chapters:
+        - reference/options.qmd
+
+format:
+  dsestu-dark-html: default

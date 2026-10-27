@@ -1,0 +1,185 @@
+<script>
+// Book projects: rebuilds Quarto's book sidebar into one list (parts as group headings,
+// chapters under them) that nests the current page's TOC under the current chapter.
+// Runs before DOMContentLoaded so Quarto's search and the template's TOC script see the final DOM.
+(function () {
+  "use strict";
+
+  var sidebar = document.getElementById("quarto-sidebar");
+  var menu = sidebar && sidebar.querySelector(".sidebar-menu-container > ul");
+  if (!menu) return; // a single document, not a book
+
+  function h(tag, cls, parent, txt) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt !== undefined) e.textContent = txt;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function text(el) { return el ? el.textContent.replace(/\s+/g, " ").trim() : ""; }
+  function chapter(a) {
+    return {
+      href: a.href,
+      num: text(a.querySelector(".chapter-number")),
+      title: text(a.querySelector(".chapter-title")) || text(a),
+      current: a.classList.contains("active")
+    };
+  }
+  var FLAG = '<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="currentColor"><path d="M3.5 1.75a.75.75 0 0 1 .75.75v.3l7.9 2.63a.5.5 0 0 1 0 .95L4.25 9.1v4.65a.75.75 0 0 1-1.5 0V2.5a.75.75 0 0 1 .75-.75z"/></svg>';
+
+  // Parts from the sidebar tree; consecutive loose pages (preface, appendices) form their own part.
+  var parts = [], loose = null;
+  Array.prototype.forEach.call(menu.children, function (li) {
+    if (li.classList.contains("sidebar-item-section")) {
+      var head = li.querySelector(":scope > .sidebar-item-container > a.sidebar-link");
+      var part = { title: text(head), href: head && head.getAttribute("href") ? head.href : null, chapters: [] };
+      li.querySelectorAll(":scope > ul a.sidebar-link[href]").forEach(function (a) { part.chapters.push(chapter(a)); });
+      parts.push(part);
+      loose = null;
+    } else {
+      var a = li.querySelector("a.sidebar-link[href]");
+      if (!a) return;
+      if (!loose) { loose = { title: chapter(a).title, href: null, loose: true, chapters: [] }; parts.push(loose); }
+      loose.chapters.push(chapter(a));
+    }
+  });
+  parts = parts.filter(function (p) { return p.chapters.length || p.href; });
+  if (!parts.length) return;
+
+  var titleLink = sidebar.querySelector(".sidebar-title a");
+  var home = titleLink ? titleLink.href : parts[0].chapters[0].href;
+  var bookName = text(titleLink) || document.title;
+  var currentPart = 0, currentChapter = null;
+  parts.forEach(function (p, i) {
+    p.chapters.forEach(function (c) { if (c.current) { currentPart = i; currentChapter = c; } });
+  });
+
+  // ─── Last-read flag (read the previous visit before this one overwrites it) ───
+  // "/book/" and "/book/index.html" are the same page
+  function pathOf(href) { return new URL(href, location.href).pathname.replace(/index\.html$/, ""); }
+  var KEY = "dsestu-book:" + pathOf(home);
+  var last = null;
+  try { last = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  var here = pathOf(location.href);
+  function samePage(href) { return pathOf(href) === here; }
+  var lastChapter = null;
+  if (last && last.path && last.path !== here) {
+    parts.forEach(function (p, i) {
+      p.chapters.forEach(function (c) { if (pathOf(c.href) === last.path) { lastChapter = c; } });
+    });
+  }
+
+  // ─── Build: one list, parts as group headings, the current chapter expanded into its sections ───
+  document.body.classList.add("dsestu-book");
+  var nav = h("nav", "book-nav");
+  nav.setAttribute("aria-label", "Book");
+  var column = h("div", "book-column", nav);
+  var bookLink = h("a", "book-name", column, bookName);
+  bookLink.href = home;
+  var searchSlot = h("div", "book-search", column);
+
+  var toc = sidebar.querySelector("nav#TOC");
+  parts.forEach(function (p) {
+    var group = h("section", "book-part", column);
+    if (!p.loose) { // a loose part's only heading would repeat its first page's title
+      var heading = h(p.href ? "a" : "p", "book-part-title", group, p.title);
+      if (p.href) heading.href = p.href;
+    }
+    var list = h("ol", "book-chapters", group);
+    p.chapters.forEach(function (c) {
+      var li = h("li", "", list);
+      var a = h("a", "book-chapter", li);
+      a.href = c.href;
+      if (c.num) h("span", "book-chapter-num", a, c.num);
+      h("span", "book-chapter-title", a, c.title);
+      if (c.current) {
+        a.setAttribute("aria-current", "page");
+        li.classList.add("is-current");
+        if (toc) li.appendChild(toc);
+      }
+      if (c === lastChapter) {
+        a.insertAdjacentHTML("beforeend", '<span class="book-flag" title="Where you stopped">' + FLAG + '<span class="visually-hidden">(where you stopped)</span></span>');
+        a.classList.add("is-last-read");
+      }
+    });
+  });
+
+  // Quarto's search box moves into the column; its own script initialises it on DOMContentLoaded.
+  var search = sidebar.querySelector("#quarto-search");
+  if (search) {
+    searchSlot.appendChild(search);
+    h("kbd", "", searchSlot, /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K");
+  } else searchSlot.remove();
+  sidebar.replaceChildren(nav);
+  // long books: bring the current chapter into view inside the list
+  var cur = column.querySelector('[aria-current="page"]');
+  if (cur) addEventListener("load", function () { cur.scrollIntoView({ block: "nearest" }); });
+
+  // ─── Running head: PART › CHAPTER ───
+  var crumbs = document.querySelector(".quarto-title-breadcrumbs");
+  if (crumbs && currentChapter) {
+    var head = h("p", "book-running-head");
+    // below 1280px the contents become an overlay; this labelled button opens it (CSS shows it only then)
+    var open = h("button", "book-running-open", head);
+    open.type = "button";
+    open.innerHTML = 'Contents <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>';
+    open.addEventListener("click", function () { if (window.dsestuOpenContents) window.dsestuOpenContents(); });
+    var partName = parts[currentPart].title;
+    if (partName !== currentChapter.title) {
+      h("span", "book-running-part", head, partName);
+      h("span", "book-running-sep", head, "›").setAttribute("aria-hidden", "true");
+    }
+    if (currentChapter.num) h("span", "book-running-num", head, currentChapter.num);
+    h("span", "book-running-chapter", head, currentChapter.title);
+    crumbs.remove();
+    // sits in the page's head row, level with the toolbar, so the title stands alone
+    var mainEl = document.querySelector("main#quarto-document-content, main.content");
+    if (mainEl) mainEl.prepend(head);
+  }
+  var meta = document.querySelector(".quarto-title-meta");
+  if (meta && !text(meta)) meta.remove();
+
+  // ─── Continue reading (book home only) ───
+  if (lastChapter && samePage(home)) {
+    var main = document.querySelector("main#quarto-document-content, main.content");
+    var titleBlock = main && main.querySelector("#title-block-header");
+    if (main) {
+      var cont = h("a", "book-continue");
+      cont.href = lastChapter.href + (last.section ? "#" + last.section : "");
+      cont.insertAdjacentHTML("afterbegin", '<span class="book-flag">' + FLAG + "</span>");
+      h("span", "book-continue-label", cont, "Continue reading");
+      h("span", "book-continue-target", cont, lastChapter.title + (last.sectionTitle ? " › " + last.sectionTitle : ""));
+      if (titleBlock) titleBlock.appendChild(cont); else main.prepend(cont);
+    }
+  }
+
+  // ─── Record this visit ───
+  function record() {
+    if (!currentChapter || samePage(home)) return; // the home page never replaces the last-read place
+    var active = toc && toc.querySelector("a.active");
+    var id = active ? new URL(active.getAttribute("href") || "", location.href).hash.slice(1) : "";
+    try {
+      localStorage.setItem(KEY, JSON.stringify({ path: here, section: id, sectionTitle: id ? text(active) : "" }));
+    } catch (e) {}
+  }
+  var pending = false;
+  addEventListener("scroll", function () {
+    if (pending) return;
+    pending = true;
+    setTimeout(function () { pending = false; record(); }, 800);
+  }, { passive: true });
+  addEventListener("pagehide", record);
+  addEventListener("DOMContentLoaded", record);
+
+  // Ctrl/Cmd-K focuses search.
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+      // the text field; on small screens Quarto renders a button that opens its search overlay instead
+      var input = searchSlot.querySelector(".aa-Input");
+      var opener = document.querySelector(".aa-DetachedSearchButton");
+      if (input && input.offsetParent) { e.preventDefault(); input.focus(); }
+      else if (opener) { e.preventDefault(); opener.click(); }
+    }
+  });
+})();
+</script>

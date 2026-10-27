@@ -1,0 +1,11 @@
+# Jupyter notebooks
+
+`.ipynb` files render from the outputs stored in the notebook. Run the notebook in Jupyter first, save it, then render.
+
+## Front matter
+
+Use a raw first cell holding the YAML block. When a notebook has none, the renderer inserts a generic one at the top of the file.
+
+## Outputs
+
+Images, HTML tables, Plotly and Altair outputs render as they appear in Jupyter. Errors render as a short error line without the traceback.

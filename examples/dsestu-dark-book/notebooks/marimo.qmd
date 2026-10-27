@@ -1,0 +1,22 @@
+# marimo notebooks
+
+marimo notebooks render from the outputs the marimo editor already saved. Nothing is re-executed, so a notebook that queries a database renders in seconds.
+
+## Turn off autorun once
+
+marimo only saves outputs when autorun on startup is off. Add this to the project's `pyproject.toml`, then run the notebook once in the editor:
+
+```toml
+[tool.marimo.runtime]
+auto_instantiate = false
+```
+
+## What stays interactive
+
+- Plotly figures and Altair charts keep zoom, hover and legends.
+- Dataframes keep search, sorting, paging and CSV download.
+- Widgets such as sliders appear as marimo's snapshot of them, since they need a running kernel.
+
+## Stale outputs
+
+When a cell's code changed since its last run, its output is missing and the renderer warns with the count of stale cells. Run them in marimo and render again.

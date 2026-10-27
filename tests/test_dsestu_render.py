@@ -95,3 +95,52 @@ def test_ipynb_gets_raw_cell_once(tmp_path):
     cells = json.loads(path.read_text())["cells"]
     assert [c["cell_type"] for c in cells] == ["raw", "markdown"]
     assert cells[0]["id"] == "front-matter" and "".join(cells[0]["source"]).startswith('---\ntitle: "Report"')
+
+
+CHAPTER = '''import marimo
+
+app = marimo.App()
+
+
+@app.cell
+def _():
+    import marimo as mo
+    return (mo,)
+
+
+@app.cell
+def _(mo):
+    mo.md("# Station coverage")
+    return
+
+
+if __name__ == "__main__":
+    app.run()
+'''
+
+
+def test_book_renders_marimo_chapter_without_touching_source(tmp_path):
+    import os, shutil, subprocess, sys
+    import pytest
+    from dsestu_render import render_project
+
+    if shutil.which("quarto") is None:
+        pytest.skip("quarto is not installed")
+    (tmp_path / "ch").mkdir()
+    (tmp_path / "_quarto.yml").write_text(
+        'project:\n  type: book\nbook:\n  title: "T"\n  chapters:\n    - index.qmd\n    - part: "P"\n      chapters:\n        - ch/stations.py\n'
+    )
+    (tmp_path / "index.qmd").write_text("# Home\n")
+    # like examples/dsestu-dark-book: the extension is a relative symlink into the repo
+    from dsestu_render import EXTENSIONS
+    (tmp_path / "_extensions").mkdir()
+    (tmp_path / "_extensions" / "dsestu-dark").symlink_to(os.path.relpath(EXTENSIONS / "dsestu-dark", tmp_path / "_extensions"))
+    nb = tmp_path / "ch" / "stations.py"
+    nb.write_text(CHAPTER)
+    subprocess.run([sys.executable, "-m", "marimo", "export", "session", nb.name, "--no-sandbox"], cwd=nb.parent, check=True, capture_output=True)
+
+    out = render_project(tmp_path, None, [])
+    page = (out / "ch" / "stations.html").read_text()
+    assert out == tmp_path / "_book"
+    assert '<span class="chapter-title">Station coverage</span>' in page
+    assert nb.read_text() == CHAPTER  # no front matter written back into a chapter

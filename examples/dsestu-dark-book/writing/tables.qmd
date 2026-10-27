@@ -1,0 +1,21 @@
+# Tables
+
+Markdown tables render as plain, compact tables. Dataframes from notebooks render as interactive tables with search, sorting and paging.
+
+## Markdown tables
+
+| Network | Stations | Median distance |
+|---------|---------:|----------------:|
+| North   | 412      | 3.1 km          |
+| West    | 287      | 4.6 km          |
+| South   | 158      | 6.2 km          |
+
+: Synthetic example data {.striped}
+
+## Dataframes
+
+A marimo dataframe output keeps its interactivity: type in the search box, click a column to sort, and download the rows as CSV. marimo saves only the first page of a table, so write `mo.ui.table(df, pagination=False)` to include every row.
+
+## Wide tables
+
+A table wider than the column scrolls sideways inside its frame instead of pushing the page wider.
